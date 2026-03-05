@@ -1,0 +1,4 @@
+# ripgrep config
+--smart-case
+--max-columns=150
+--glob=!.git/*

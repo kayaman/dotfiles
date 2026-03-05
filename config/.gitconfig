@@ -1,0 +1,70 @@
+[user]
+    name = Marco Antonio Gonzalez Junior
+    email = m@rco.sh
+    # email = mgonzalez@sabesp.com.br
+
+[init]
+    defaultBranch = main
+
+[core]
+    editor = vi
+    pager = delta
+    autocrlf = input
+    whitespace = fix
+
+[pull]
+    rebase = true
+
+[push]
+    default = current
+    autoSetupRemote = true
+
+[fetch]
+    prune = true
+    pruneTag = true
+
+[rebase]
+    autoStash = true
+    autoSquash = true
+
+[merge]
+    conflictstyle = zdiff3
+
+[diff]
+    algorithm = histogram
+    colorMoved = default
+
+[rerere]
+    enabled = true
+
+# ── Delta (pretty diffs) ────────────────────────────────────
+[delta]
+    navigate = true
+    dark = true
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = TwoDark
+    file-style = bold yellow ul
+    file-decoration-style = none
+    hunk-header-style = file line-number syntax
+    hunk-header-decoration-style = blue box
+
+[interactive]
+    diffFilter = delta --color-only
+
+# ── Aliases ──────────────────────────────────────────────────
+[alias]
+    co = checkout
+    sw = switch
+    br = branch
+    ci = commit
+    st = status -sb
+    df = diff
+    dfs = diff --staged
+    lg = log --oneline --graph --decorate
+    lga = log --oneline --graph --decorate --all
+    undo = reset --soft HEAD~1
+    amend = commit --amend --no-edit
+    wip = !git add -A && git commit -m 'wip'
+    pristine = !git reset --hard && git clean -dfx
+    branches = branch --sort=-committerdate --format='%(refname:short) %(committerdate:relative)'

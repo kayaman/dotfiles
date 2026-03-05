@@ -1,0 +1,18 @@
+{
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "[shellscript]": {
+        "editor.defaultFormatter": "mkhl.shfmt",
+        "editor.tabSize": 4
+    },
+    "[markdown]": {
+        "editor.tabSize": 2,
+        "files.trimTrailingWhitespace": false
+    },
+    "[yaml]": {
+        "editor.tabSize": 2
+    }
+}

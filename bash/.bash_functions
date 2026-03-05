@@ -1,0 +1,419 @@
+# ─────────────────────────────────────────────────────────────
+#  ~/.bash_functions — utility functions
+# ─────────────────────────────────────────────────────────────
+
+# ── Navigation ───────────────────────────────────────────────
+
+# Create dir and cd into it
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# Interactive cd with fzf
+cdf() {
+    local dir
+    dir="$(fd --type d --hidden --follow --exclude .git 2>/dev/null | fzf --preview 'eza --tree --level=1 --icons {}')" \
+        && cd "$dir"
+}
+
+# Go to git repo root
+groot() { cd "$(git rev-parse --show-toplevel 2>/dev/null || echo '.')" ; }
+
+# ── File search ──────────────────────────────────────────────
+
+# Open file found with fzf in $EDITOR
+fe() {
+    local file
+    file="$(fzf --preview 'bat --color=always --style=numbers --line-range=:100 {}')" \
+        && "${EDITOR:-vim}" "$file"
+}
+
+# Ripgrep + fzf for interactive code search
+rgi() {
+    local result
+    result="$(rg --color=always --line-number --no-heading "$@" 2>/dev/null \
+        | fzf --ansi --delimiter ':' \
+              --preview 'bat --color=always --highlight-line {2} {1}' \
+              --preview-window '+{2}/2')" || return
+    local file line
+    file="$(echo "$result" | cut -d: -f1)"
+    line="$(echo "$result" | cut -d: -f2)"
+    "${EDITOR:-vim}" "+${line}" "$file"
+}
+
+# ── Git helpers ──────────────────────────────────────────────
+
+# Interactive branch switch with fzf
+gbf() {
+    local branch
+    branch="$(git branch --all --sort=-committerdate \
+        | sed 's/^[* ]*//' | sed 's|remotes/origin/||' | sort -u \
+        | fzf --preview 'git log --oneline --graph --color=always {} -- | head -20')" \
+        && git switch "$branch"
+}
+
+gq() { git add -A && git commit -m "${*:-wip}"; }
+
+# Interactive git add with preview (handles spaces in filenames)
+gaf() {
+    local files f
+    files="$(git diff --name-only --diff-filter=ACMR \
+        | fzf --multi --preview 'git diff --color=always -- {}')"
+    [[ -z "$files" ]] && return
+    while IFS= read -r f; do [[ -n "$f" ]] && git add "$f"; done <<< "$files"
+    git status -sb
+}
+
+ghist() { git log --oneline --graph --decorate -"${1:-15}"; }
+
+# ── Python helpers ───────────────────────────────────────────
+
+# Create and activate a venv in current dir
+mkvenv() {
+    local name="${1:-.venv}"
+    python3 -m venv "$name"
+    source "$name/bin/activate"
+    pip install --upgrade pip setuptools wheel
+    echo "Activated $name ($(python3 --version))"
+}
+
+# ── Node/TypeScript helpers ──────────────────────────────────
+
+tsinit() {
+    local name="${1:-.}"
+    if [[ "$name" != "." ]]; then
+        mkdir -p "$name" && cd "$name"
+    fi
+    npm init -y
+    npm install --save-dev typescript @types/node ts-node
+    npx tsc --init --target ES2022 --module NodeNext \
+        --moduleResolution NodeNext --strict --esModuleInterop \
+        --outDir ./dist --rootDir ./src
+    mkdir -p src
+    echo 'console.log("Hello, TypeScript!");' > src/index.ts
+    echo "TypeScript project initialized in $(pwd)"
+}
+
+# ── Extract anything ─────────────────────────────────────────
+extract() {
+    if [[ ! -f "$1" ]]; then
+        echo "Error: '$1' is not a valid file" >&2
+        return 1
+    fi
+    case "$1" in
+        *.tar.bz2) tar xjf "$1"   ;;
+        *.tar.gz)  tar xzf "$1"   ;;
+        *.tar.xz)  tar xJf "$1"   ;;
+        *.tar.zst) tar --zstd -xf "$1" ;;
+        *.bz2)     bunzip2 "$1"   ;;
+        *.gz)      gunzip "$1"    ;;
+        *.tar)     tar xf "$1"    ;;
+        *.tbz2)    tar xjf "$1"   ;;
+        *.tgz)     tar xzf "$1"   ;;
+        *.zip)     unzip "$1"     ;;
+        *.Z)       uncompress "$1";;
+        *.7z)      7z x "$1"     ;;
+        *.rar)     unrar x "$1"  ;;
+        *)         echo "Cannot extract '$1': unknown format" >&2; return 1 ;;
+    esac
+}
+
+# ── Misc utilities ───────────────────────────────────────────
+
+# Quick HTTP server
+serve() {
+    local port="${1:-8000}"
+    echo "Serving on http://localhost:$port"
+    python3 -m http.server "$port"
+}
+
+# Find process by name
+psg() { ps aux | head -1; ps aux | grep -v grep | grep -i "$@"; }
+
+# Weather
+wttr() { curl -s "wttr.in/${1:-}?format=3"; }
+
+# Quick note
+note() {
+    local notes_dir="$HOME/notes"
+    mkdir -p "$notes_dir"
+    if [[ $# -eq 0 ]]; then
+        "${EDITOR:-vim}" "$notes_dir/$(date +%Y-%m-%d).md"
+    else
+        echo "$(date +%H:%M) — $*" >> "$notes_dir/$(date +%Y-%m-%d).md"
+        echo "Note added."
+    fi
+}
+
+# Colored man (wrapper; uses command man internally)
+man() {
+    LESS_TERMCAP_md=$'\e[1;36m' \
+    LESS_TERMCAP_me=$'\e[0m' \
+    LESS_TERMCAP_us=$'\e[1;32m' \
+    LESS_TERMCAP_ue=$'\e[0m' \
+    LESS_TERMCAP_so=$'\e[1;33;44m' \
+    LESS_TERMCAP_se=$'\e[0m' \
+    command man "$@"
+}
+
+
+# Semver release: branch, PR, merge, tag, gh release (no confirmation)
+ship() {
+    local usage="Usage: ship <major|minor|patch> [commit message]"
+    local bump="${1:-}"
+    local msg="${2:-}"
+
+    if [[ -z "$bump" ]]; then
+        echo "$usage" >&2
+        return 1
+    fi
+
+    case "$bump" in
+        major|minor|patch) ;;
+        *)
+            echo "Error: bump must be major, minor, or patch" >&2
+            echo "$usage" >&2
+            return 1
+            ;;
+    esac
+
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        echo "Error: not inside a git repository" >&2
+        return 1
+    fi
+
+    if ! command -v gh > /dev/null 2>&1; then
+        echo "Error: gh CLI not found" >&2
+        return 1
+    fi
+
+    local current_branch
+    current_branch="$(git rev-parse --abbrev-ref HEAD)"
+
+    local latest_tag
+    latest_tag="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
+
+    local major=0 minor=0 patch=0
+    if [[ -n "$latest_tag" ]]; then
+        IFS='.' read -r major minor patch <<< "${latest_tag#v}"
+    fi
+
+    case "$bump" in
+        major) (( major++ )); minor=0; patch=0 ;;
+        minor) (( minor++ )); patch=0 ;;
+        patch) (( patch++ )) ;;
+    esac
+
+    local new_version="v${major}.${minor}.${patch}"
+
+    if [[ -n "$(git status --porcelain)" ]]; then
+        if [[ -z "$msg" ]]; then
+            echo "Error: working tree has uncommitted changes — provide a commit message as \$2" >&2
+            return 1
+        fi
+        git add -A
+        git commit -m "$msg"
+    fi
+
+    local branch="release/${new_version}"
+    git checkout -b "$branch"
+    git push -u origin "$branch"
+
+    local pr_url
+    pr_url="$(gh pr create \
+        --title "release: ${new_version}" \
+        --body "Release ${new_version} (${bump} bump from ${latest_tag:-none})" \
+        --base main \
+        --head "$branch" \
+        --label "release" 2>/dev/null || \
+      gh pr create \
+        --title "release: ${new_version}" \
+        --body "Release ${new_version} (${bump} bump from ${latest_tag:-none})" \
+        --base main \
+        --head "$branch")"
+
+    echo "PR created: $pr_url"
+
+    if ! gh pr merge --squash --delete-branch; then
+        echo "Error: PR merge failed — aborting release" >&2
+        git checkout main
+        return 1
+    fi
+
+    git checkout main
+    git pull
+
+    git tag -a "$new_version" -m "Release ${new_version}"
+    git push origin "$new_version"
+
+    gh release create "$new_version" \
+        --title "Release ${new_version}" \
+        --generate-notes
+
+    echo "Released ${new_version}"
+}
+
+# ── Enhanced utilities ───────────────────────────────────────
+
+
+preview() {
+    if [[ -f "$1" ]]; then
+        bat "$1" 2>/dev/null || cat "$1"
+    elif [[ -d "$1" ]]; then
+        eza --tree --level=2 --icons "$1" 2>/dev/null || ls -la "$1"
+    else
+        echo "Usage: preview <file_or_directory>"
+    fi
+}
+
+# JSON pretty print and query
+json() {
+    if [[ $# -eq 0 ]]; then
+        jq . 2>/dev/null || python3 -m json.tool
+    else
+        jq "$@" 2>/dev/null || echo "jq not available"
+    fi
+}
+
+killport() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: killport <port>"
+        return 1
+    fi
+    local pid
+    pid="$(lsof -ti:"$1" 2>/dev/null)"
+    if [[ -n "$pid" ]]; then
+        kill "$pid" && echo "Killed process $pid on port $1"
+    else
+        echo "No process found on port $1"
+    fi
+}
+
+bak() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: bak <file>"
+        return 1
+    fi
+    cp "$1" "$1.bak-$(date +%Y%m%d-%H%M%S)"
+    echo "Backed up $1"
+}
+
+# Find large files
+findbig() {
+    local size="${1:-100M}"
+    echo "Finding files larger than $size..."
+    find . -type f -size +"$size" -exec ls -lh {} \; 2>/dev/null | awk '{print $5 " " $9}' | sort -hr
+}
+
+dot() { code ~/Projects/dotfiles; }
+# $_ = last arg of previous command (mkdir)
+mk() { mkdir -p "$@" && cd "$_"; }
+
+# ── Kubernetes ───────────────────────────────────────────────
+kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
+kexec() { kubectl exec -it "$1" -- /bin/bash; }
+klogs() { kubectl logs -f "$1"; }
+kpf() { kubectl port-forward "$1" "$2"; }
+
+openfiles() { awk '{print $1}' /proc/sys/fs/file-nr; }
+usage() { sudo lsof -p "$(pidof "$1")"; }
+# List processes on port (use killport to kill)
+portlist() { ss -tulnp 2>/dev/null | grep ":$1" || netstat -tulpn 2>/dev/null | grep ":$1"; }
+
+# Create a backup file
+function backup() {
+  cp "$1"{,.bak}
+}
+
+# Create a data URL from a file
+function dataurl() {
+  local mimeType=$(file -b --mime-type "$1")
+  if [[ $mimeType == text/* ]]; then
+    mimeType="${mimeType};charset=utf-8"
+  fi
+  echo "data:${mimeType};base64,$(openssl base64 -in "$1" | tr -d '\n')"
+}
+
+# Find and kill process by name (works alongside Oh My Zsh)
+function fkill() {
+    local pid
+    if [[ "$UID" != "0" ]]; then
+        pid=$(ps -f -u "$UID" | sed 1d | fzf -m | awk '{print $2}')
+    else
+        pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+    fi
+
+    if [[ -n "$pid" ]]; then
+        echo "$pid" | xargs kill -"${1:-9}"
+    fi
+}
+
+# Update dotfiles
+function update_dotfiles() {
+  (cd ~/Projects/dotfiles && git pull && ./install.sh)
+  echo "Dotfiles updated"
+}
+
+# Find files by extension
+function findext() {
+    find . -type f -name "*.$1" | sort
+}
+
+# Memory usage of processes
+function mem_usage() {
+  ps aux | awk '{print $6/1024 " MB\t\t" $11}' | sort -n
+}
+
+# Check if command exists
+function command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Count files in directory
+function count() {
+  find "${1:-.}" -type f | wc -l
+}
+
+# Create and attach to a tmux session or attach to an existing one
+function tm() {
+    local session=${1:-main}
+    if ! tmux has-session -t="$session" 2>/dev/null; then
+        tmux new-session -s "$session"
+    else
+        tmux attach-session -t "$session"
+    fi
+}
+
+function gbc() {
+    git branch "$1" && git checkout "$1"
+}
+
+function gfp () {
+  git fetch && git pull
+}
+
+fpp() { ss -ltnp 2>/dev/null | grep -w "$1" || netstat -ltnp 2>/dev/null | grep -w "$1"; }
+
+function get_gpg_key() {
+  if [ -z "${GPG_SIGNING_KEY:-}" ]; then
+    if command -v gpg >/dev/null 2>&1; then
+      GPG_SIGNING_KEY="$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | grep -A 1 '^sec' | tail -n 1 | awk '{print $1}' | cut -d'/' -f2)"
+    fi
+  fi
+  if [ -n "${GPG_SIGNING_KEY:-}" ]; then
+    git config --global user.signingkey "$GPG_SIGNING_KEY"
+    echo "$GPG_SIGNING_KEY"
+  fi
+}
+
+function tree() {
+    if [ -f "$HOME/.treeglobal" ]; then
+        command tree -I "$(paste -d\| -s "$HOME/.treeglobal")" "$@"
+    else
+        command tree "$@"
+    fi
+}
+
+alias ping='ping -c 5'
+
+function nmap_() {
+  nmap -sS -O -p- 192.168.15.0/24
+}
