@@ -45,4 +45,34 @@ sudo firewall-cmd --reload
 ```bash
 # get my current IP address
 ip addr show | grep -E "inet.*scope global" | head -1
+
+# get my current IP address
+ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1
 ```
+
+## Remote Desktop (RDP)
+
+```bash
+# install xrdp and dependencies
+sudo zypper install -y xrdp xorgxrdp
+
+# enable and start the service
+sudo systemctl enable --now xrdp
+
+# check firewall status
+sudo firewall-cmd --state
+
+# configure the firewall to allow RDP connections
+sudo firewall-cmd --add-port=3389/tcp --permanent
+sudo firewall-cmd --reload
+
+# verify firewall status
+sudo firewall-cmd --list-ports
+
+# check if a desktop environment is installed
+echo $XDG_CURRENT_DESKTOP
+
+# verify that xrdp is listening on the default port
+sudo ss -tlnp | grep :3389
+```
+
