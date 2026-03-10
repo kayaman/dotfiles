@@ -89,4 +89,40 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
+## VNC (Wayland)
+
+```bash
+echo $XDG_SESSION_TYPE
+
+sudo zypper install gnome-remote-desktop
+
+rm -rf ~/.local/share/gnome-remote-desktop/certificates
+mkdir -p ~/.local/share/gnome-remote-desktop/certificates
+
+# Generate a self-signed certificate
+openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
+  -subj "/CN=gnome-remote-desktop" \
+  -keyout ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.key \
+  -out ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.crt
+
+
+chmod 600 ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.key
+chmod 644 ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.crt
+
+grdctl rdp set-tls-cert ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.crt
+grdctl rdp set-tls-key ~/.local/share/gnome-remote-desktop/certificates/rdp-tls.key
+
+systemctl --user restart gnome-remote-desktop
+systemctl --user daemon-reload
+
+grdctl rdp enable
+grdctl rdp set-credentials YOUR_USERNAME YOUR_PASSWORD
+
+# validating
+systemctl --user status gnome-remote-desktop
+grdctl status
+
+# firewall
+sudo firewall-cmd --add-port=3389/tcp --permanent && sudo firewall-cmd --reload
+```
 
