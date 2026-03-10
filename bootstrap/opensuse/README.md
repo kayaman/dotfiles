@@ -76,3 +76,17 @@ echo $XDG_CURRENT_DESKTOP
 sudo ss -tlnp | grep :3389
 ```
 
+## Docker
+
+```bash
+sudo zypper refresh
+sudo zypper update
+sudo zypper install --no-recommends --no-confirm docker docker-compose
+
+sudo systemctl enable docker --now
+
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+
