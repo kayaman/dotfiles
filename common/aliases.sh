@@ -69,7 +69,8 @@ alias df='df -h'
 alias du='du -sh'
 alias free='free -h'
 alias j='jobs -l'
-alias 'sudo zypper install'='sudo zypper install -y --no-recommends "$@"'
+# Shell function: wraps 'sudo zypper install' with -y --no-recommends defaults
+szi() { sudo zypper install -y --no-recommends "$@"; }
 
 # ── Misc ─────────────────────────────────────────────────────
 alias timestamp='date +%Y-%m-%dT%H:%M:%S'
