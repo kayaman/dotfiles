@@ -1,6 +1,7 @@
 [user]
     name = Marco Antonio Gonzalez Junior
     email = m@rco.sh
+	signingkey = 24BA22E761BDFD3F
     # email = mgonzalez@sabesp.com.br
 
 [init]
@@ -68,3 +69,9 @@
     wip = !git add -A && git commit -m 'wip'
     pristine = !git reset --hard && git clean -dfx
     branches = branch --sort=-committerdate --format='%(refname:short) %(committerdate:relative)'
+[commit]
+	gpgsign = true
+[tag]
+	gpgSign = true
+[gpg]
+	program = gpg2
