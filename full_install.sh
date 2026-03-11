@@ -8,7 +8,6 @@ set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -18,7 +17,7 @@ NC='\033[0m'
 
 info()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
 ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*" >&2; }
 err()   { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 
 # ── Distro detection ─────────────────────────────────────────
@@ -45,13 +44,8 @@ info "Detected distro: $DISTRO"
 pkg_install() {
     case "$DISTRO" in
         opensuse)
-            # Installs packages with recommended dependencies included.
-            # Note: Using --no-recommends would be better to:
-            # - Reduce disk space usage by avoiding optional packages
-            # - Speed up installation time
-            # - Minimize dependencies and potential conflicts
-            # - Give users more control over what gets installed
-            # - Reduce attack surface by installing only required packages
+            # Uses --no-recommends intentionally to minimize installed packages,
+            # reduce disk usage, and limit unnecessary dependencies.
             sudo zypper install -y --no-recommends "$@"
             ;;
         ubuntu)
@@ -137,7 +131,14 @@ install_system_packages() {
             # Node.js — use NodeSource if not present
             if ! command -v node &>/dev/null; then
                 info "Installing Node.js via NodeSource..."
-                curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+                # NOTE: This downloads and executes a remote setup script.
+                # Review https://deb.nodesource.com/setup_lts.x before running
+                # on sensitive systems, or install nodejs via apt from Ubuntu repos.
+                local nodesource_setup
+                nodesource_setup="$(mktemp /tmp/nodesource-setup-XXXX.sh)"
+                curl -fsSL -o "$nodesource_setup" https://deb.nodesource.com/setup_lts.x
+                sudo -E bash "$nodesource_setup"
+                rm -f "$nodesource_setup"
                 sudo apt-get install -y nodejs
             fi
             ;;
@@ -162,24 +163,54 @@ install_delta_github() {
     local delta_ver
     delta_ver="$(curl -fsSL https://api.github.com/repos/dandavison/delta/releases/latest \
         | jq -r '.tag_name')"
-    local deb_url="https://github.com/dandavison/delta/releases/download/${delta_ver}/git-delta_${delta_ver}_${arch}.deb"
-    local tmp
-    tmp="$(mktemp /tmp/delta-XXXX.deb)"
-    curl -fsSL -o "$tmp" "$deb_url" && sudo dpkg -i "$tmp" && rm -f "$tmp" || {
-        warn "delta install failed — git diffs will use default pager"
-    }
+    local deb_file="git-delta_${delta_ver}_${arch}.deb"
+    local deb_url="https://github.com/dandavison/delta/releases/download/${delta_ver}/${deb_file}"
+    local sha_url="https://github.com/dandavison/delta/releases/download/${delta_ver}/git-delta_${delta_ver}_sha256sums"
+    local tmp_deb tmp_sha
+    tmp_deb="$(mktemp /tmp/delta-XXXX.deb)"
+    tmp_sha="$(mktemp /tmp/delta-sha256-XXXX.txt)"
+    if curl -fsSL -o "$tmp_deb" "$deb_url" && curl -fsSL -o "$tmp_sha" "$sha_url"; then
+        local expected actual
+        expected="$(grep "$deb_file" "$tmp_sha" | awk '{print $1}')"
+        actual="$(sha256sum "$tmp_deb" | awk '{print $1}')"
+        if [[ "$expected" == "$actual" ]]; then
+            sudo dpkg -i "$tmp_deb" || {
+                warn "delta install failed — git diffs will use default pager"
+            }
+        else
+            warn "delta checksum mismatch — skipping install (expected: $expected, got: $actual)"
+        fi
+    else
+        warn "delta download failed — git diffs will use default pager"
+    fi
+    rm -f "$tmp_deb" "$tmp_sha"
 }
 
 install_package_managers() {
-    # rvm
+    # NOTE: The following installers are downloaded and executed locally.
+    # Review each script before running on sensitive systems.
+
+    # rvm — https://rvm.io/rvm/install
     gpg --keyserver keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-    curl -sSL https://get.rvm.io | bash
+    local rvm_installer
+    rvm_installer="$(mktemp /tmp/rvm-install-XXXX.sh)"
+    curl -sSL -o "$rvm_installer" https://get.rvm.io
+    bash "$rvm_installer"
+    rm -f "$rvm_installer"
 
-    # nvm
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+    # nvm — https://github.com/nvm-sh/nvm
+    local nvm_installer
+    nvm_installer="$(mktemp /tmp/nvm-install-XXXX.sh)"
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh > "$nvm_installer"
+    bash "$nvm_installer"
+    rm -f "$nvm_installer"
 
-    # uv
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # uv — https://docs.astral.sh/uv/getting-started/installation/
+    local uv_installer
+    uv_installer="$(mktemp /tmp/uv-install-XXXX.sh)"
+    curl -LsSf -o "$uv_installer" https://astral.sh/uv/install.sh
+    sh "$uv_installer"
+    rm -f "$uv_installer"
 }
 
 
@@ -191,7 +222,13 @@ install_starship() {
     fi
 
     info "Installing starship prompt..."
-    curl -fsSL https://starship.rs/install.sh | sh -s -- -y
+    # NOTE: Downloads and executes a remote installer — review https://starship.rs/install.sh
+    # before running on sensitive systems, or install via your distro's package manager.
+    local starship_installer
+    starship_installer="$(mktemp /tmp/starship-install-XXXX.sh)"
+    curl -fsSL -o "$starship_installer" https://starship.rs/install.sh
+    sh "$starship_installer" -y
+    rm -f "$starship_installer"
     ok "starship installed"
 }
 
@@ -238,14 +275,14 @@ symlink_dotfiles() {
     info "Symlinking dotfiles..."
 
     # Shared configs
-    link_file "$DOTFILES_DIR/shell/aliases.sh"   "$HOME/.aliases"
-    link_file "$DOTFILES_DIR/shell/functions.sh" "$HOME/.functions"
+    link_file "$DOTFILES_DIR/common/aliases.sh" "$HOME/.aliases"
+    link_file "$DOTFILES_DIR/.functions"         "$HOME/.functions"
 
     # Zsh config
-    link_file "$DOTFILES_DIR/zsh/.zshrc"         "$HOME/.zshrc"
+    link_file "$DOTFILES_DIR/.zshrc"             "$HOME/.zshrc"
 
     # Readline
-    link_file "$DOTFILES_DIR/config/.inputrc"    "$HOME/.inputrc"
+    link_file "$DOTFILES_DIR/bash/.inputrc"      "$HOME/.inputrc"
 
     # Starship, ripgrep
     mkdir -p "$XDG_CONFIG_HOME"
