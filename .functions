@@ -1,5 +1,7 @@
+#!/usr/bin/env bash
+
 # ─────────────────────────────────────────────────────────────
-#  ~/.bash_functions — utility functions
+#  .functions — utility functions
 # ─────────────────────────────────────────────────────────────
 
 # ── Navigation ───────────────────────────────────────────────
@@ -12,6 +14,10 @@ cdf() {
     local dir
     dir="$(fd --type d --hidden --follow --exclude .git 2>/dev/null | fzf --preview 'eza --tree --level=1 --icons {}')" \
         && cd "$dir"
+}
+
+p() {
+    cd ~/Projects/"$1"
 }
 
 # Go to git repo root
@@ -384,6 +390,11 @@ function tm() {
 
 function gbc() {
     git branch "$1" && git checkout "$1"
+}
+
+function ght() {
+    echo $GITHUB_TOKEN | xclip -sel clip
+    echo "GitHub token copied to clipboard!"
 }
 
 function gfp () {
