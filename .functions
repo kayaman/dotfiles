@@ -433,4 +433,8 @@ fuction random() {
     echo "$(openssl rand -hex 16)"
 }
 
+function uv2req() {
+    uv export --format requirements-txt --no-dev --no-hashes > requirements.txt
+}
+
 
