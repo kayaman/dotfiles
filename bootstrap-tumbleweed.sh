@@ -487,7 +487,7 @@ WRAPPER
 [Desktop Entry]
 Name=Cursor
 Comment=Cursor AI Code Editor
-Exec=$HOME/.local/bin/cursor %F
+Exec=cursor %F
 Icon=code
 Type=Application
 Categories=Development;TextEditor;IDE;
