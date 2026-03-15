@@ -629,8 +629,10 @@ if $INSTALL_PODMAN; then
     if has_cmd distrobox; then
         info "Distrobox already installed."
     else
-        curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install \
-            | sh -s -- --prefix "$HOME/.local"
+        tmp_installer="$(mktemp)"
+        curl -fsSL "https://raw.githubusercontent.com/89luca89/distrobox/1.7.2/install" -o "$tmp_installer"
+        sh "$tmp_installer" --prefix "$HOME/.local"
+        rm -f "$tmp_installer"
         success "Distrobox installed to ~/.local/bin"
     fi
 
