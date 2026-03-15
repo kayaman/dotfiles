@@ -28,8 +28,8 @@ mongodb://admin:admin123@localhost:27017
 docker stop mongodb
 
 # start
-docker stop mongodb
+docker start mongodb
 
 # logs
-docker stop mongodb
+docker logs -f mongodb
 ```
