@@ -15,11 +15,14 @@ grep "^$(whoami):" /etc/passwd
 # Is zsh listed as a valid login shell?
 grep zsh /etc/shells
 
-chsh -s /usr/bin/zsh
+zsh_path="$(command -v zsh)"
+echo "Detected zsh at: $zsh_path"
+# Ensure this path is present in /etc/shells before running chsh/usermod.
+chsh -s "$zsh_path"
 
 # If that doesn't stick, here are the usual culprits:
 # chsh silently fails — openSUSE sometimes uses usermod instead.
-sudo usermod -s /usr/bin/zsh $(whoami)
+sudo usermod -s "$zsh_path" "$(whoami)"
 
 grep -n 'bash\|SHELL' ~/.bashrc ~/.bash_profile ~/.profile ~/.login 2>/dev/null
 
