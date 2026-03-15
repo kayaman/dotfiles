@@ -386,9 +386,9 @@ if $INSTALL_THEFUCK; then
     append_if_missing '# ── thefuck ──────────────────────────────────────────────────────────────────'
     append_if_missing '# Type "fuck" after a bad command to auto-correct it.'
     append_if_missing '# Or just press Esc twice.'
-    append_if_missing 'has_cmd thefuck && eval "$(thefuck --alias)"'
+    append_if_missing 'command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias)"'
     append_if_missing '# Esc+Esc shortcut (double-escape to trigger correction)'
-    append_if_missing 'has_cmd thefuck && eval "$(thefuck --alias --enable-experimental-instant-mode)"'
+    append_if_missing 'command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias --enable-experimental-instant-mode)"'
 
     success "thefuck installed. Type 'fuck' after a bad command to fix it."
 fi
