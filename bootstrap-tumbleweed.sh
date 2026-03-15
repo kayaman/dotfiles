@@ -467,7 +467,17 @@ if $INSTALL_CURSOR; then
     if [[ ! -f "$CURSOR_BIN" ]]; then
         cat > "$CURSOR_BIN" <<'WRAPPER'
 #!/usr/bin/env bash
-exec "$HOME/.local/share/cursor/cursor.AppImage" --no-sandbox "$@"
+APPIMAGE="$HOME/.local/share/cursor/cursor.AppImage"
+
+# By default, run Cursor with Electron's sandbox enabled.
+# To fall back to the insecure --no-sandbox mode (e.g., if startup fails
+# due to system configuration), set CURSOR_ENABLE_NO_SANDBOX=1 explicitly.
+if [[ "${CURSOR_ENABLE_NO_SANDBOX:-0}" == "1" ]]; then
+  echo "Warning: Running Cursor with --no-sandbox disables Electron's sandbox and reduces security." >&2
+  exec "$APPIMAGE" --no-sandbox "$@"
+else
+  exec "$APPIMAGE" "$@"
+fi
 WRAPPER
         chmod +x "$CURSOR_BIN"
         success "cursor command installed to ~/.local/bin/cursor"
