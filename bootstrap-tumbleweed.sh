@@ -574,8 +574,10 @@ if $INSTALL_RUSTUP; then
         info "rustup already installed — updating."
         rustup update
     else
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-            | sh -s -- -y --no-modify-path
+        rustup_installer="$(mktemp -t rustup-init.XXXXXX)"
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o "$rustup_installer"
+        sh "$rustup_installer" -y --no-modify-path
+        rm -f "$rustup_installer"
         success "Rust stable toolchain installed."
     fi
 
