@@ -446,7 +446,12 @@ function nmap_() {
 }
 
 function dcsr() {
-    docker container stop $1 && docker container rm $1
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: dcsr CONTAINER [CONTAINER...]" >&2
+        return 1
+    fi
+
+    docker container rm -f -- "$@"
 }
 
 function random() {
