@@ -434,7 +434,24 @@ fuction random() {
 }
 
 function uv2req() {
-    uv export --format requirements-txt --no-dev --no-hashes > requirements.txt
+    if ! command -v uv >/dev/null 2>&1; then
+        printf 'uv2req: uv is not installed or not in PATH\n' >&2
+        return 1
+    fi
+
+    local tmpfile
+    tmpfile="$(mktemp requirements.txt.XXXXXX)" || {
+        printf 'uv2req: failed to create temporary file\n' >&2
+        return 1
+    }
+
+    if ! uv export --format requirements-txt --no-dev --no-hashes >"$tmpfile"; then
+        printf 'uv2req: uv export failed; requirements.txt not updated\n' >&2
+        rm -f "$tmpfile"
+        return 1
+    fi
+
+    mv "$tmpfile" requirements.txt
 }
 
 
