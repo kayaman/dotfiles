@@ -15,6 +15,10 @@
 
 set -euo pipefail
 
+zypper_install() {
+    sudo zypper --non-interactive --no-confirm --auto-agree-with-licenses in "$@"
+}
+
 # =============================================================================
 #  CONFIGURATION — toggle features on/off (true/false)
 # =============================================================================
@@ -152,8 +156,8 @@ fi
 
 if $INSTALL_BASE_TOOLS; then
     section "Base Development Tools"
-    sudo zypper --non-interactive in -t pattern devel_basis
-    sudo zypper --non-interactive in \
+    zypper_install -t pattern devel_basis
+    zypper_install \
         git git-lfs \
         curl wget \
         make cmake ninja \
