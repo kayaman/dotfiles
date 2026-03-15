@@ -7,7 +7,7 @@
 echo $SHELL
 
 # Is zsh actually installed?
-which zsh
+command -v zsh
 
 # What does /etc/passwd say your shell is?
 grep "^$(whoami):" /etc/passwd
