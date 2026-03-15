@@ -535,12 +535,18 @@ if $INSTALL_NVM; then
     append_if_missing '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"'
 
     export NVM_DIR="$HOME/.nvm"
-    # shellcheck source=/dev/null
-    source "$NVM_DIR/nvm.sh"
-    nvm install --lts
-    nvm use --lts
-    nvm alias default "lts/*"
-    success "Node.js LTS installed. Run 'nvm install <version>' to add more."
+    if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm use --lts
+        nvm alias default "lts/*"
+        success "Node.js LTS installed. Run 'nvm install <version>' to add more."
+    else
+        echo "ERROR: nvm appears to be installed in '$NVM_DIR', but '$NVM_DIR/nvm.sh' is missing or unreadable." >&2
+        echo "       Please check your nvm installation or remove '$NVM_DIR' and rerun this bootstrap script." >&2
+        exit 1
+    fi
 fi
 
 # =============================================================================
