@@ -656,7 +656,7 @@ if $INSTALL_DOCKER; then
         success "Docker installed and enabled."
     fi
 
-    if ! groups "$USER" | grep -q docker; then
+    if ! groups "$USER" | grep -qw docker; then
         sudo usermod -aG docker "$USER"
         warn "Added $USER to the 'docker' group — log out/in for it to take effect."
     fi
