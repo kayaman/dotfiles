@@ -637,7 +637,10 @@ if $INSTALL_PODMAN; then
     fi
 
     append_if_missing 'export PATH="$HOME/.local/bin:$PATH"'
-    loginctl enable-linger "$USER" 2>/dev/null || true
+    if ! loginctl enable-linger "$USER" 2>/dev/null; then
+        warn "Could not enable linger for $USER automatically (root privileges may be required)."
+        warn "To enable linger manually, run: sudo loginctl enable-linger \"$USER\""
+    fi
     success "Podman, Buildah, and Distrobox ready."
     info "Try: distrobox create --name dev-ubuntu --image ubuntu:24.04"
 fi
