@@ -9,8 +9,8 @@ echo $SHELL
 # Is zsh actually installed?
 command -v zsh
 
-# What does /etc/passwd say your shell is?
-grep "^$(whoami):" /etc/passwd
+# What does the account database say your shell is?
+getent passwd "$(whoami)"
 
 # Is zsh listed as a valid login shell?
 grep zsh /etc/shells
