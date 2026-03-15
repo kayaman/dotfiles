@@ -449,7 +449,19 @@ if $INSTALL_CURSOR; then
         curl -fL "https://downloader.cursor.sh/linux/appImage/x64" \
             -o "$CURSOR_APPIMAGE"
         chmod +x "$CURSOR_APPIMAGE"
-        success "Cursor AppImage downloaded."
+        info "Cursor AppImage downloaded, but no checksum/signature verification is performed."
+        echo "WARNING: You are about to keep and run an unverified binary downloaded from the internet."
+        read -r -p "Do you trust the Cursor download source and wish to keep/use this AppImage? [y/N] " CURSOR_TRUST_CHOICE
+        case "${CURSOR_TRUST_CHOICE:-N}" in
+            [yY])
+                success "User accepted trust assumption for Cursor AppImage."
+                ;;
+            *)
+                rm -f "$CURSOR_APPIMAGE"
+                echo "Aborting Cursor installation and removing downloaded AppImage."
+                return 1
+                ;;
+        esac
     fi
 
     if [[ ! -f "$CURSOR_BIN" ]]; then
