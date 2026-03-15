@@ -77,10 +77,20 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${RESET}"; }
 has_cmd() { command -v "$1" &>/dev/null; }
 
 BASHRC="$HOME/.bashrc"
+BASH_LOCAL="$HOME/.bash_local"
 
 append_if_missing() {
     local line="$1"
-    grep -qF "$line" "$BASHRC" || echo "$line" >> "$BASHRC"
+
+    # If ~/.bashrc is a symlink (e.g., to a repo-tracked bash/.bashrc),
+    # write machine-specific overrides to ~/.bash_local instead.
+    local target="$BASHRC"
+    if [[ -L "$BASHRC" ]]; then
+        target="$BASH_LOCAL"
+        [[ -f "$target" ]] || touch "$target"
+    fi
+
+    grep -qF "$line" "$target" || echo "$line" >> "$target"
 }
 
 # =============================================================================
