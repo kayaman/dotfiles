@@ -522,8 +522,10 @@ if $INSTALL_NVM; then
     else
         NVM_LATEST=$(curl -fsSL https://api.github.com/repos/nvm-sh/nvm/releases/latest \
             | grep '"tag_name"' | cut -d'"' -f4)
-        curl -fsSL \
-            "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_LATEST}/install.sh" | bash
+        NVM_INSTALLER="$(mktemp)"
+        curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_LATEST}/install.sh" -o "$NVM_INSTALLER"
+        bash "$NVM_INSTALLER"
+        rm -f "$NVM_INSTALLER"
         success "nvm ${NVM_LATEST} installed."
     fi
 
