@@ -8,5 +8,5 @@ source_if_exists() {
 
 source_if_exists "$HOME/.env"
 source_if_exists "$HOME/.env.sh"
-source_if_exists "$DOTFILES/.aliases"
-source_if_exists "$DOTFILES/.functions"
+source_if_exists "$HOME/.aliases"
+source_if_exists "$HOME/.functions"
