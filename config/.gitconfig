@@ -1,8 +1,7 @@
 [user]
     name = Marco Antonio Gonzalez Junior
     email = m@rco.sh
-	signingkey = 24BA22E761BDFD3F
-    # email = mgonzalez@sabesp.com.br
+	signingkey = "$(GPG_SIGNING_KEY)"
 
 [init]
     defaultBranch = main

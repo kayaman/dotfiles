@@ -313,6 +313,11 @@ dot() { code ~/Projects/dotfiles; }
 # $_ = last arg of previous command (mkdir)
 mk() { mkdir -p "$@" && cd "$_"; }
 
+function aliases() {
+    vi ~/Projects/dotfiles/.aliases
+    src
+}
+
 # ── Kubernetes ───────────────────────────────────────────────
 kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
 kexec() { kubectl exec -it "$1" -- /bin/bash; }
@@ -427,4 +432,8 @@ alias ping='ping -c 5'
 
 function nmap_() {
   nmap -sS -O -p- 192.168.15.0/24
+}
+
+function dcsr() {
+    docker container stop $1 && docker container rm $1
 }

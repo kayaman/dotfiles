@@ -55,13 +55,9 @@ alias gstp='git stash pop'
 alias grb='git rebase'
 alias grbi='git rebase -i'
 
-# ── Docker ───────────────────────────────────────────────────
-alias docker='podman'
-alias docker-compose='podman-compose'
-
 # ── System ───────────────────────────────────────────────────
-alias rc='vi ~/.bashrc'
-alias src='source ~/.bashrc'
+alias rc='vi ~/.zshrc'
+alias src='source ~/.zshrc'
 alias path='echo "$PATH" | tr : "\n" | nl'
 alias ports='ss -tulnp'
 alias myip='curl -s https://ifconfig.me && echo'
@@ -75,3 +71,9 @@ alias timestamp='date +%Y-%m-%dT%H:%M:%S'
 alias week='date +%V'
 alias c='clear'
 alias h='history | tail -30'
+
+# ── Docker ─────────────────────────────────────────────────────
+alias dcup='docker compose up'
+alias dcdown='docker compose down'
+alias dcs='docker container stop'
+alias dcr='docker container rm'
