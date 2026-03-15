@@ -262,7 +262,10 @@ if $INSTALL_STARSHIP; then
     if has_cmd starship; then
         info "Starship already installed."
     else
-        curl -sS https://starship.rs/install.sh | sh -s -- --yes
+        tmp_starship_installer="$(mktemp)"
+        curl -fsSL https://starship.rs/install.sh -o "$tmp_starship_installer"
+        sh "$tmp_starship_installer" --yes
+        rm -f "$tmp_starship_installer"
         success "Starship installed."
     fi
 
