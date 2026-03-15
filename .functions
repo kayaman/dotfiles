@@ -314,7 +314,18 @@ dot() { code ~/Projects/dotfiles; }
 mk() { mkdir -p "$@" && cd "$_"; }
 
 function aliases() {
-    vi ~/Projects/dotfiles/.aliases
+    local editor aliases_file
+    editor="${VISUAL:-${EDITOR:-vi}}"
+
+    if [[ -n "$DOTFILES" && -f "$DOTFILES/.aliases" ]]; then
+        aliases_file="$DOTFILES/.aliases"
+    elif [[ -f "$HOME/.aliases" ]]; then
+        aliases_file="$HOME/.aliases"
+    else
+        aliases_file="${DOTFILES:-$HOME}/.aliases"
+    fi
+
+    "$editor" "$aliases_file"
     src
 }
 
