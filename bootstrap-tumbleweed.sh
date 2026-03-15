@@ -352,10 +352,10 @@ if $INSTALL_FZF; then
     append_if_missing '# fzf settings'
     append_if_missing 'export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"'
     append_if_missing '# Use fd for fzf file search (respects .gitignore)'
-    append_if_missing 'has_cmd fd && export FZF_DEFAULT_COMMAND="fd --type f --hidden --follow --exclude .git"'
-    append_if_missing 'has_cmd fd && export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"'
+    append_if_missing 'command -v fd >/dev/null 2>&1 && export FZF_DEFAULT_COMMAND="fd --type f --hidden --follow --exclude .git"'
+    append_if_missing 'command -v fd >/dev/null 2>&1 && export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"'
     append_if_missing '# Preview files with bat when available'
-    append_if_missing 'has_cmd bat && export FZF_CTRL_T_OPTS="--preview '"'"'bat --color=always --line-range :50 {}'"'"'"'
+    append_if_missing 'command -v bat >/dev/null 2>&1 && export FZF_CTRL_T_OPTS="--preview '"'"'bat --color=always --line-range :50 {}'"'"'"'
 
     success "fzf configured. Key bindings:"
     info "  Ctrl+R  — fuzzy search shell history"
