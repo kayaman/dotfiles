@@ -1,4 +1,10 @@
-# just notes
+# notes
+
+## go
+
+```bash
+sudo zypper install --no-recommends --no-confirm go
+```
 
 ## OpenSSH Server
 

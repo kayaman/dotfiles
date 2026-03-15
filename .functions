@@ -431,9 +431,15 @@ function tree() {
 alias ping='ping -c 5'
 
 function nmap_() {
-  nmap -sS -O -p- 192.168.15.0/24
+    nmap -sS -O -p- 192.168.15.0/24
 }
 
 function dcsr() {
     docker container stop $1 && docker container rm $1
 }
+
+function random() {
+    echo "$(openssl rand -hex 16)"
+}
+
+
