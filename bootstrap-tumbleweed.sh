@@ -528,7 +528,13 @@ if $INSTALL_PYENV; then
     if [[ -d "$HOME/.pyenv" ]]; then
         info "pyenv already installed."
     else
-        curl -fsSL https://pyenv.run | bash
+        PYENV_INSTALLER="$(mktemp)"
+        trap 'rm -f "$PYENV_INSTALLER"' EXIT
+        curl -fsSL https://pyenv.run -o "$PYENV_INSTALLER"
+        info "pyenv installer downloaded to $PYENV_INSTALLER. Review it before continuing if desired."
+        bash "$PYENV_INSTALLER"
+        rm -f "$PYENV_INSTALLER"
+        trap - EXIT
         success "pyenv installed."
     fi
 
