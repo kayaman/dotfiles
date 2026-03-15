@@ -313,6 +313,22 @@ dot() { code ~/Projects/dotfiles; }
 # $_ = last arg of previous command (mkdir)
 mk() { mkdir -p "$@" && cd "$_"; }
 
+function aliases() {
+    local editor aliases_file
+    editor="${VISUAL:-${EDITOR:-vi}}"
+
+    if [[ -n "$DOTFILES" && -f "$DOTFILES/.aliases" ]]; then
+        aliases_file="$DOTFILES/.aliases"
+    elif [[ -f "$HOME/.aliases" ]]; then
+        aliases_file="$HOME/.aliases"
+    else
+        aliases_file="${DOTFILES:-$HOME}/.aliases"
+    fi
+
+    "$editor" "$aliases_file"
+    src
+}
+
 # ── Kubernetes ───────────────────────────────────────────────
 kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
 kexec() { kubectl exec -it "$1" -- /bin/bash; }
@@ -429,7 +445,16 @@ function nmap_() {
     nmap -sS -O -p- 192.168.15.0/24
 }
 
-fuction random() {
+function dcsr() {
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: dcsr CONTAINER [CONTAINER...]" >&2
+        return 1
+    fi
+
+    docker container rm -f -- "$@"
+}
+
+function random() {
     echo "$(openssl rand -hex 16)"
 }
 

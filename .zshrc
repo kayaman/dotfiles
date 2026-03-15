@@ -6,4 +6,7 @@ source_if_exists() {
     [[ -s "$1" ]] && . "$1"
 }
 
-source_if_exists "$DOTFILES/.zshrc"
+source_if_exists "$HOME/.env"
+source_if_exists "$HOME/.env.sh"
+source_if_exists "$HOME/.aliases"
+source_if_exists "$HOME/.functions"
