@@ -367,23 +367,20 @@ cleanup_gpg_files() {
         done
     fi
     
-    # If no keys remain, offer to clean the entire .gnupg directory
+    # If no keys remain, safely rebuild trustdb but keep the .gnupg directory
     local remaining_keys
     remaining_keys=$(get_all_key_fingerprints "public" | wc -l)
     
     if (( remaining_keys == 0 )); then
         if [[ "$DRY_RUN" == "true" ]]; then
-            info "[DRY-RUN] No keys remaining - would ask to remove entire .gnupg directory"
+            info "[DRY-RUN] No keys remaining - would rebuild trust database and leave ~/.gnupg directory intact"
             return 0
         fi
-        
-        if confirm "No GPG keys remaining. Remove entire .gnupg directory?"; then
-            rm -rf "${HOME}/.gnupg" && success "Removed .gnupg directory completely."
-        else
-            # Just rebuild the trustdb
-            $GPG --check-trustdb 2>/dev/null || true
-            info "Rebuilt trust database."
-        fi
+
+        info "No GPG keys remaining. Leaving existing ~/.gnupg configuration directory intact."
+        # Rebuild the trust database to ensure consistent state
+        $GPG --check-trustdb 2>/dev/null || true
+        info "Rebuilt trust database."
     else
         # Rebuild trust database
         if [[ "$DRY_RUN" == "false" ]]; then
