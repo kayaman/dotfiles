@@ -183,7 +183,7 @@ symlink_dotfiles() {
     link_file "$DOTFILES/.zshrc"         "$HOME/.zshrc"
     link_file "$DOTFILES/.aliases"    "$HOME/.aliases"
     link_file "$DOTFILES/.functions"  "$HOME/.functions"
-    link_file "$DOTFILES/.inputrc"         "$HOME/.inputrc"
+    link_file "$DOTFILES/config/.inputrc"   "$HOME/.inputrc"
     link_file "$DOTFILES/.gitconfig"         "$HOME/.gitconfig"
 
     # Starship
