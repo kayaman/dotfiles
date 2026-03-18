@@ -1,6 +1,12 @@
 [[ $- != *i* ]] && return
 
-export DOTFILES="$HOME/Projects/dotfiles"
+# Allow DOTFILES to be provided by the environment; otherwise, derive it
+# from the location of this sourced .zshrc (handles clones/symlinks).
+if [[ -z "${DOTFILES:-}" ]]; then
+    zshrc_source=${${(%):-%N}:A}
+    DOTFILES=${zshrc_source:h}
+fi
+export DOTFILES
 export ZSH="$HOME/.oh-my-zsh"
 
 source_if_exists() {
