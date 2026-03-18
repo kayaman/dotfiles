@@ -167,9 +167,17 @@ link_file() {
         # local backup="${dst}.bak.$(date +%s)"
         # warn "Backing up existing $dst → $backup"
         # mv "$dst" "$backup"
-    elif [[ -e "$dst" ]]; then
-        warn "File $dst already exists and is a symlink"
-        warn "Well.. Skipping $dst"
+    elif [[ -L "$dst" ]]; then
+        # Destination is a symlink: check its current target.
+        local current_target
+        current_target="$(readlink "$dst" || true)"
+        if [[ "$current_target" == "$src" ]]; then
+            ok "Symlink $dst already points to $src"
+        else
+            warn "Symlink $dst points to $current_target (expected $src), updating..."
+            ln -sfn "$src" "$dst"
+            ok "Relinked $dst → $src"
+        fi
     else
         ln -sf "$src" "$dst"
         ok "Linked $dst → $src"
