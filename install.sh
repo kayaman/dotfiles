@@ -5,10 +5,7 @@ set -euo pipefail
 #  dotfiles installer — openSUSE Tumbleweed & Ubuntu
 # ─────────────────────────────────────────────────────────────
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-BLE_DIR="$XDG_DATA_HOME/blesh"
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -60,12 +57,14 @@ install_system_packages() {
         opensuse)
             sudo zypper refresh
             pkg_install \
-                bash bash-completion git curl wget unzip tar \
+                bash bash-completion \
+                zsh \
+                git curl wget unzip tar \
                 make gcc gawk \
                 fzf bat eza fd ripgrep git-delta \
                 python3 python3-pip \
                 nodejs npm \
-                jq htop tmux
+                jq htop tmux tree go
             ;;
         ubuntu)
             sudo apt-get update
@@ -142,21 +141,6 @@ install_package_managers() {
     curl -LsSf https://astral.sh/uv/install.sh | sh
 }
 
-# ── ble.sh (Bash Line Editor) ────────────────────────────────
-install_blesh() {
-    if [[ -d "$BLE_DIR" ]]; then
-        ok "ble.sh already installed at $BLE_DIR"
-        return
-    fi
-
-    info "Installing ble.sh..."
-    local tmp
-    tmp="$(mktemp -d)"
-    git clone --recursive --depth 1 https://github.com/akinomyoga/ble.sh.git "$tmp/ble.sh"
-    make -C "$tmp/ble.sh" PREFIX="$HOME/.local" install
-    rm -rf "$tmp"
-    ok "ble.sh installed"
-}
 
 # ── Starship prompt ──────────────────────────────────────────
 install_starship() {
@@ -174,32 +158,42 @@ install_starship() {
 link_file() {
     local src="$1" dst="$2"
     if [[ -e "$dst" ]] && [[ ! -L "$dst" ]]; then
-        local backup="${dst}.bak.$(date +%s)"
-        warn "Backing up existing $dst → $backup"
-        mv "$dst" "$backup"
+
+        warn "File $dst already exists and is not a symlink"
+        warn "Skipping $dst"
+        # TODO: if --overwrite
+        # local backup="${dst}.bak.$(date +%s)"
+        # warn "Backing up existing $dst → $backup"
+        # mv "$dst" "$backup"
+    elif [[ -e "$dst" ]]; then
+        warn "File $dst already exists and is a symlink"
+        warn "Well.. Skipping $dst"
+    else
+        ln -sf "$src" "$dst"
+        ok "Linked $dst → $src"
     fi
-    ln -sf "$src" "$dst"
-    ok "Linked $dst → $src"
 }
 
 symlink_dotfiles() {
     info "Symlinking dotfiles..."
 
-    # Bash configs
-    link_file "$DOTFILES_DIR/bash/.bashrc"         "$HOME/.bashrc"
-    link_file "$DOTFILES_DIR/bash/.bash_aliases"    "$HOME/.bash_aliases"
-    link_file "$DOTFILES_DIR/bash/.bash_functions"  "$HOME/.bash_functions"
-    link_file "$DOTFILES_DIR/bash/.blerc"           "$HOME/.blerc"
-    link_file "$DOTFILES_DIR/bash/.inputrc"         "$HOME/.inputrc"
+    link_file "$DOTFILES/.profile"         "$HOME/.profile"
+    link_file "$DOTFILES/.zshrc"         "$HOME/.zshrc"
+    link_file "$DOTFILES/.aliases"    "$HOME/.aliases"
+    link_file "$DOTFILES/.functions"  "$HOME/.functions"
+    link_file "$DOTFILES/.inputrc"         "$HOME/.inputrc"
+    link_file "$DOTFILES/.gitconfig"         "$HOME/.gitconfig"
 
-    # Starship, ripgrep
+    # Starship
     mkdir -p "$XDG_CONFIG_HOME"
-    link_file "$DOTFILES_DIR/config/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
-    mkdir -p "$XDG_CONFIG_HOME/ripgrep"
-    link_file "$DOTFILES_DIR/config/ripgrep/config" "$XDG_CONFIG_HOME/ripgrep/config"
+    link_file "$DOTFILES/config/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 
-    # Git
-    link_file "$DOTFILES_DIR/config/.gitconfig" "$HOME/.gitconfig"
+    # ripgrep
+    mkdir -p "$XDG_CONFIG_HOME/ripgrep"
+    link_file "$DOTFILES/config/ripgrep/config" "$XDG_CONFIG_HOME/ripgrep/config"
+
+    link_file "$DOTFILES/config/.gitconfig" "$HOME/.gitconfig"
+    link_file "$DOTFILES/config/.treeglobal" "$HOME/.treeglobal"
 
     ok "All dotfiles symlinked"
 }
@@ -212,12 +206,11 @@ main() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║        dotfiles installer                ║${NC}"
-    echo -e "${CYAN}║   bash + ble.sh + starship + fzf         ║${NC}"
+    echo -e "${CYAN}║   zsh + ohmyzsh + starship                ║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
     echo ""
 
     install_system_packages
-    install_blesh
     install_starship
     $install_pms && install_package_managers
     symlink_dotfiles
@@ -227,7 +220,7 @@ main() {
     echo -e "${GREEN}║          Installation complete!          ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
     echo ""
-    info "Open a new terminal or run: exec bash"
+    info "Open a new terminal or run: exec zsh"
     echo ""
 }
 

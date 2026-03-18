@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# PATH — deduplicated
+_add_to_path() {
+    local dir="$1"
+    [[ -d "$dir" ]] && [[ ":$PATH:" != *":$dir:"* ]] && PATH="$dir:$PATH"
+}
+
+_add_to_path "$HOME/.local/bin"
+_add_to_path "$HOME/.cargo/bin"

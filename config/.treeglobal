@@ -1,0 +1,57 @@
+# VCS
+.git
+.svn
+.hg
+
+# Dependencies / package managers
+node_modules
+vendor
+.pnpm-store
+.npm
+.yarn
+.bun
+
+# Build outputs
+dist
+build
+out
+target
+bin
+obj
+coverage
+.nyc_output
+
+# Python
+__pycache__
+*.pyc
+.venv
+venv
+.mypy_cache
+.pytest_cache
+
+# Java/JVM
+.gradle
+.mvn
+*.class
+
+# Rust / Go / C
+Cargo.lock
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# IDE / editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS / misc
+.DS_Store
+Thumbs.db
+*.log
+tmp
+temp
+.cache
