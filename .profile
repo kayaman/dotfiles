@@ -31,9 +31,13 @@ if [ -x /usr/bin/fortune ] ; then
     /usr/bin/fortune
     echo
 fi
-. "$HOME/.cargo/env"
+if [ -r "$HOME/.cargo/env" ]; then
+    . "$HOME/.cargo/env"
+fi
 
-. "$HOME/.local/share/../bin/env"
+if [ -r "$HOME/.local/share/../bin/env" ]; then
+    . "$HOME/.local/share/../bin/env"
+fi
 
 export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
