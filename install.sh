@@ -205,7 +205,6 @@ symlink_dotfiles() {
     link_file "$DOTFILES/config/.gitconfig" "$HOME/.gitconfig"
     link_file "$DOTFILES/config/.treeglobal" "$HOME/.treeglobal"
 
-
     ok "All dotfiles symlinked"
 }
 
