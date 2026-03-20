@@ -64,8 +64,8 @@
     pristine = !git reset --hard && git clean -dfx
     branches = branch --sort=-committerdate --format='%(refname:short) %(committerdate:relative)'
 [commit]
-	gpgsign = true
+    gpgsign = true
 [tag]
-	gpgsign = true
+    gpgsign = true
 [gpg]
-	program = gpg2
+    program = gpg
