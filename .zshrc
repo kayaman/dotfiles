@@ -21,3 +21,6 @@ source_if_exists "$HOME/.env.sh"
 source_if_exists "$DOTFILES/.aliases"
 source_if_exists "$DOTFILES/.functions"
 source_if_exists "$DOTFILES/.path"
+
+# ── Starship prompt ───────────────────────────────────────────
+command -v starship &>/dev/null && eval "$(starship init zsh)"
