@@ -1,26 +1,41 @@
-[[ $- != *i* ]] && return
+#!/usr/bin/env zsh
 
-# Allow DOTFILES to be provided by the environment; otherwise, derive it
-# from the location of this sourced .zshrc (handles clones/symlinks).
-if [[ -z "${DOTFILES:-}" ]]; then
-    zshrc_source=${${(%):-%N}:A}
-    DOTFILES=${zshrc_source:h}
-fi
-export DOTFILES
+# ── Oh My Zsh ────────────────────────────────────────────────
 export ZSH="$HOME/.oh-my-zsh"
+
+ZSH_THEME=""  # Using starship instead
+
+plugins=(
+    git
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    zsh-completions
+)
+
+[[ -d "$ZSH/custom/plugins/zsh-completions/src" ]] && \
+    fpath+="$ZSH/custom/plugins/zsh-completions/src"
+
+source "$ZSH/oh-my-zsh.sh"
+
+# ── Custom config ─────────────────────────────────────────────
+DOTFILES="$HOME/Projects/dotfiles"
 
 source_if_exists() {
     [[ -s "$1" ]] && . "$1"
 }
 
-if [[ -o login ]]; then
-    source_if_exists "$HOME/.profile"
-fi
 source_if_exists "$HOME/.env"
 source_if_exists "$HOME/.env.sh"
-source_if_exists "$DOTFILES/.aliases"
-source_if_exists "$DOTFILES/.functions"
-source_if_exists "$DOTFILES/.path"
+source_if_exists "$HOME/.path"
+source_if_exists "$HOME/.aliases"
+source_if_exists "$HOME/.functions"
+
+# Source all scripts in snippets directory
+if [[ -d "$DOTFILES/snippets" ]]; then
+    for snippet in "$DOTFILES"/snippets/*.sh; do
+        [[ -r "$snippet" ]] && source "$snippet"
+    done
+fi
 
 # ── Starship prompt ───────────────────────────────────────────
 command -v starship &>/dev/null && eval "$(starship init zsh)"
