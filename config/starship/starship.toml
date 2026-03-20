@@ -49,12 +49,13 @@ format   = '[$symbol]($style) '
 style    = 'bold overlay'
 
 [os.symbols]
-Linux   = ''
-Macos   = ''
-Windows = ''
-Ubuntu  = ''
-Arch    = ''
-Fedora  = ''
+Linux    = ''
+Macos    = ''
+Windows  = ''
+Ubuntu   = ''
+Arch     = ''
+Fedora   = ''
+openSUSE = ''
 
 # ── Username (SSH only) ───────────────────────────────────────
 [username]
