@@ -329,6 +329,12 @@ function aliases() {
     src
 }
 
+function ght() {
+    echo "ght: function not implemented yet." >&2
+    echo "Usage: ght <args>  # TODO: define behavior" >&2
+    return 1
+}
+
 # ── Kubernetes ───────────────────────────────────────────────
 kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
 kexec() { kubectl exec -it "$1" -- /bin/bash; }
