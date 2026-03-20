@@ -58,7 +58,7 @@ install_system_packages() {
             sudo apt-get update
             sudo apt-get install -y \
                 git curl wget unzip tar build-essential gawk jq \
-                fzf bat fd-find ripgrep htop tmux tree \
+                fzf bat fd-find ripgrep git-delta htop tmux tree \
                 python3 python3-pip python3-venv pipx \
                 zsh podman docker.io docker-compose
 
@@ -69,9 +69,14 @@ install_system_packages() {
             # Install eza
             if ! command -v eza &>/dev/null; then
                 sudo mkdir -p /etc/apt/keyrings
-                wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg 2>/dev/null || true
-                echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
-                sudo apt-get update && sudo apt-get install -y eza || warn "eza install failed"
+                if sudo apt-get install -y gnupg >/dev/null && \
+                   wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
+                    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
+                    sudo apt-get update && sudo apt-get install -y eza || { warn "eza install failed"; sudo rm -f /etc/apt/sources.list.d/gierens.list; }
+                else
+                    warn "eza install failed: could not import GPG key"
+                    sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+                fi
             fi
 
             # Node.js
@@ -174,6 +179,7 @@ symlink_dotfiles() {
     link_file "$DOTFILES/.zshrc"         "$HOME/.zshrc"
     link_file "$DOTFILES/.aliases"       "$HOME/.aliases"
     link_file "$DOTFILES/.functions"     "$HOME/.functions"
+    link_file "$DOTFILES/.path"          "$HOME/.path"
     link_file "$DOTFILES/config/.gitconfig" "$HOME/.gitconfig"
     link_file "$DOTFILES/config/.treeglobal" "$HOME/.treeglobal"
 

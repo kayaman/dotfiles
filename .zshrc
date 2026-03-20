@@ -18,7 +18,16 @@ plugins=(
 source "$ZSH/oh-my-zsh.sh"
 
 # ── Custom config ─────────────────────────────────────────────
-DOTFILES="$HOME/Projects/dotfiles"
+if [[ -z "${DOTFILES:-}" ]]; then
+    # ${(%):-%N} expands to the path of the currently sourced file in zsh
+    local zshrc_path=${(%):-%N}
+    if [[ -n "$zshrc_path" ]]; then
+        DOTFILES="${zshrc_path:A:h}"
+    else
+        DOTFILES="$HOME/Projects/dotfiles"
+    fi
+fi
+export DOTFILES
 
 source_if_exists() {
     [[ -s "$1" ]] && . "$1"
@@ -32,7 +41,7 @@ source_if_exists "$HOME/.functions"
 
 # Source all scripts in snippets directory
 if [[ -d "$DOTFILES/snippets" ]]; then
-    for snippet in "$DOTFILES"/snippets/*.sh; do
+    for snippet in "$DOTFILES"/snippets/*.sh(N); do
         [[ -r "$snippet" ]] && source "$snippet"
     done
 fi
