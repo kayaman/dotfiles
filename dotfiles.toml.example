@@ -1,0 +1,24 @@
+# dotfiles.toml - Configuration and Secrets Template
+# Copy this to dotfiles.toml and fill in your details
+
+[git]
+# Global git configuration used by scripts/setup-git.sh
+name = "Marco Antonio Gonzalez Junior"
+email = "m@rco.sh"
+signingkey = "5A033DAE3AAB812E"
+
+[secrets]
+# Environment variables exported to every shell session
+# GITHUB_TOKEN = "your_github_token"
+# OPENAI_API_KEY = "your_openai_key"
+
+[features]
+# Toggle specific setup logic (optional)
+# enable_docker = true
+# enable_kubernetes = false
+
+[snippets]
+# Control which snippets from the snippets/ directory are loaded
+# If not specified, all will be loaded by default.
+# nvm = true
+# bun = true

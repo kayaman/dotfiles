@@ -339,7 +339,7 @@ function ght() {
 kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
 kexec() { kubectl exec -it "$1" -- /bin/bash; }
 klogs() { kubectl logs -f "$1"; }
-kpf() { kubectl port-forward "$1" "$2"; }
+kpf() { kubectl port-forward "$@"; }
 
 openfiles() { awk '{print $1}' /proc/sys/fs/file-nr; }
 usage() { sudo lsof -p "$(pidof "$1")"; }
