@@ -24,7 +24,7 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu)** and **WSL**.
 Clone the repository to your preferred location (e.g., `~/Projects/dotfiles`):
 
 ```bash
-git clone https://github.com/YOUR_USER/dotfiles.git ~/Projects/dotfiles
+git clone git://github.com/kayaman/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
