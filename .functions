@@ -329,6 +329,10 @@ function aliases() {
     src
 }
 
+function ght() {
+
+}
+
 # ── Kubernetes ───────────────────────────────────────────────
 kurl() { kubectl run curl-debug --image=curlimages/curl -i --tty --rm -- sh; }
 kexec() { kubectl exec -it "$1" -- /bin/bash; }
