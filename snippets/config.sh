@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# snippet: config.sh - Load dotfiles.toml configuration and secrets
+# snippet: config.sh - Load dotfiles configuration and secrets via SOPS or plain TOML
 
 config_file="$DOTFILES/dotfiles.toml"
-[[ -f "$config_file" ]] || return 0
+sops_file="$DOTFILES/dotfiles.sops.toml"
+
+# Determine which file to load
+if [[ -f "$sops_file" ]] && command -v sops &>/dev/null; then
+    content=$(sops -d "$sops_file" 2>/dev/null) || return 0
+elif [[ -f "$config_file" ]]; then
+    content=$(cat "$config_file" 2>/dev/null) || return 0
+else
+    return 0
+fi
 
 # Use python to safely parse TOML and export [secrets] as env vars
-# Requires Python 3.11+ for built-in 'tomllib', or 'toml' library installed
-eval $(python3 -c "
+eval $(echo "$content" | python3 -c "
 import sys
-import os
 
-def load_config(file_path):
+def load_config(text):
     try:
         import tomllib
     except ImportError:
@@ -18,20 +25,17 @@ def load_config(file_path):
             import toml as tomllib
         except ImportError:
             return {}
-    
     try:
-        with open(file_path, 'rb') as f:
-            return tomllib.load(f)
+        return tomllib.loads(text)
     except Exception:
         return {}
 
-data = load_config('$config_file')
+content = sys.stdin.read()
+data = load_config(content)
 
 # Load secrets into environment variables
 if 'secrets' in data and isinstance(data['secrets'], dict):
     for k, v in data['secrets'].items():
         if isinstance(v, (str, int, float, bool)):
-            # Print as export command
             print(f'export {k}=\"{v}\"')
-
 " 2>/dev/null)

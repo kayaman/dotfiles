@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Dotfiles Installer — WSL (Ubuntu/Debian)
+#  Dotfiles Installer — Linux (openSUSE & Ubuntu)
 #  Installs system packages, dev tools, Oh My Zsh, Starship, and symlinks dotfiles.
 # =============================================================================
 
 set -euo pipefail
 
-DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${XDG_CONFIG_HOME:="$HOME/.config"}"
 
 RED='\033[0;31m'
@@ -22,34 +22,70 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 
+# ── Distro detection ─────────────────────────────────────────
+detect_distro() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        case "$ID" in
+            opensuse-tumbleweed|opensuse) echo "opensuse" ;;
+            ubuntu|pop|linuxmint|debian)  echo "ubuntu"   ;;
+            *)
+                warn "Unsupported distro: $ID — attempting Ubuntu-style install"
+                echo "ubuntu"
+                ;;
+        esac
+    else
+        err "Cannot detect distro"; exit 1
+    fi
+}
+
+DISTRO="$(detect_distro)"
+info "Detected distro: $DISTRO"
+
 # ── 1. System packages ───────────────────────────────────────
 install_system_packages() {
-    section "System Packages (WSL)"
-    
-    sudo apt-get update
-    sudo apt-get install -y \
-        git curl wget unzip tar build-essential gawk jq \
-        fzf bat fd-find ripgrep htop tmux tree stow \
-        python3 python3-pip python3-venv pipx \
-        zsh
-    
-    # Ubuntu aliases for modern tools
-    [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-    [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
+    section "System Packages"
+    case "$DISTRO" in
+        opensuse)
+            sudo zypper refresh
+            sudo zypper install -y --no-recommends \
+                git curl wget unzip tar make gcc gcc-c++ gawk jq \
+                fzf bat eza fd ripgrep git-delta htop tmux tree \
+                python3 python3-pip python3-pipx nodejs npm \
+                zsh podman buildah distrobox docker docker-compose
+            ;;
+        ubuntu)
+            sudo apt-get update
+            sudo apt-get install -y \
+                git curl wget unzip tar build-essential gawk jq \
+                fzf bat fd-find ripgrep git-delta htop tmux tree \
+                python3 python3-pip python3-venv pipx \
+                zsh podman docker.io docker-compose
 
-    # Install eza
-    if ! command -v eza &>/dev/null; then
-        sudo mkdir -p /etc/apt/keyrings
-        if sudo apt-get install -y gnupg >/dev/null && \
-           wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
-            echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
-            sudo apt-get update && sudo apt-get install -y eza || { warn "eza install failed"; sudo rm -f /etc/apt/sources.list.d/gierens.list; }
-        else
-            warn "eza install failed: could not import GPG key"
-            sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-        fi
-    fi
+            # Ubuntu aliases for modern tools
+            [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
+            [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
+            # Install eza
+            if ! command -v eza &>/dev/null; then
+                sudo mkdir -p /etc/apt/keyrings
+                if sudo apt-get install -y gnupg >/dev/null && \
+                   wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
+                    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
+                    sudo apt-get update && sudo apt-get install -y eza || { warn "eza install failed"; sudo rm -f /etc/apt/sources.list.d/gierens.list; }
+                else
+                    warn "eza install failed: could not import GPG key"
+                    sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+                fi
+            fi
+
+            # Node.js
+            if ! command -v node &>/dev/null; then
+                curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+                sudo apt-get install -y nodejs
+            fi
+            ;;
+    esac
     ok "System packages installed"
 }
 
@@ -117,25 +153,6 @@ install_dev_tools() {
         ok "rustup already installed"
     fi
 
-    # antigravity-usage
-    if ! command -v antigravity-usage &>/dev/null; then
-        sudo npm install -g antigravity-usage
-        ok "antigravity-usage installed"
-    else
-        ok "antigravity-usage already installed"
-    fi
-
-    # sops
-    if ! command -v sops &>/dev/null; then
-        local sops_version="v3.8.1"
-        local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux-amd64"
-        sudo curl -Lo /usr/local/bin/sops "$sops_url"
-        sudo chmod +x /usr/local/bin/sops
-        ok "sops installed"
-    else
-        ok "sops already installed"
-    fi
-
     # starship
     if ! command -v starship &>/dev/null && [ ! -f "/usr/local/bin/starship" ]; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y
@@ -147,18 +164,38 @@ install_dev_tools() {
 
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
 symlink_dotfiles() {
-    section "Symlinking Dotfiles with Stow"
+    section "Symlinking Dotfiles"
 
-    cd "$DOTFILES/stow" || { warn "stow directory not found"; return; }
-    
-    for pkg in *; do
-        if [[ -d "$pkg" ]]; then
-            stow -R -t "$HOME" "$pkg"
-            ok "Stowed $pkg"
+    link_file() {
+        local src="$1" dst="$2"
+        if [[ -e "$dst" && ! -L "$dst" ]]; then
+            mv "$dst" "${dst}.bak.$(date +%s)"
+            warn "Backed up existing $dst"
         fi
-    done
+        ln -sf "$src" "$dst"
+        ok "Linked $dst"
+    }
+
+    link_file "$DOTFILES/.zshrc"         "$HOME/.zshrc"
+    link_file "$DOTFILES/.aliases"       "$HOME/.aliases"
+    link_file "$DOTFILES/.functions"     "$HOME/.functions"
+    link_file "$DOTFILES/.path"          "$HOME/.path"
+    link_file "$DOTFILES/config/.gitconfig" "$HOME/.gitconfig"
+    link_file "$DOTFILES/config/.treeglobal" "$HOME/.treeglobal"
+
+    mkdir -p "$XDG_CONFIG_HOME"
+    link_file "$DOTFILES/config/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
+
+    mkdir -p "$XDG_CONFIG_HOME/ripgrep"
+    link_file "$DOTFILES/config/ripgrep/config" "$XDG_CONFIG_HOME/ripgrep/config"
+
+    mkdir -p "$XDG_CONFIG_HOME/kitty"
+    link_file "$DOTFILES/config/kitty/kitty.conf" "$XDG_CONFIG_HOME/kitty/kitty.conf"
+
+    mkdir -p "$XDG_CONFIG_HOME/ghostty"
+    link_file "$DOTFILES/config/ghostty/config" "$XDG_CONFIG_HOME/ghostty/config"
     
-    cd "$DOTFILES"
+    ok "All dotfiles symlinked"
 }
 
 # ── 5. Default Shell ─────────────────────────────────────────
@@ -181,7 +218,7 @@ set_default_shell() {
 main() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║     dotfiles installer - WSL Edition     ║${NC}"
+    echo -e "${CYAN}║     dotfiles installer - Linux Native    ║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
     echo ""
 

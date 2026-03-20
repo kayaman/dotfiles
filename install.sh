@@ -50,7 +50,7 @@ install_system_packages() {
             sudo zypper refresh
             sudo zypper install -y --no-recommends \
                 git curl wget unzip tar make gcc gcc-c++ gawk jq \
-                fzf bat eza fd ripgrep git-delta htop tmux tree \
+                fzf bat eza fd ripgrep git-delta htop tmux tree stow \
                 python3 python3-pip python3-pipx nodejs npm \
                 zsh podman buildah distrobox docker docker-compose
             ;;
@@ -58,7 +58,7 @@ install_system_packages() {
             sudo apt-get update
             sudo apt-get install -y \
                 git curl wget unzip tar build-essential gawk jq \
-                fzf bat fd-find ripgrep git-delta htop tmux tree \
+                fzf bat fd-find ripgrep htop tmux tree stow \
                 python3 python3-pip python3-venv pipx \
                 zsh podman docker.io docker-compose
 
@@ -153,6 +153,25 @@ install_dev_tools() {
         ok "rustup already installed"
     fi
 
+    # antigravity-usage
+    if ! command -v antigravity-usage &>/dev/null; then
+        sudo npm install -g antigravity-usage
+        ok "antigravity-usage installed"
+    else
+        ok "antigravity-usage already installed"
+    fi
+
+    # sops
+    if ! command -v sops &>/dev/null; then
+        local sops_version="v3.8.1"
+        local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux-amd64"
+        sudo curl -Lo /usr/local/bin/sops "$sops_url"
+        sudo chmod +x /usr/local/bin/sops
+        ok "sops installed"
+    else
+        ok "sops already installed"
+    fi
+
     # starship
     if ! command -v starship &>/dev/null && [ ! -f "/usr/local/bin/starship" ]; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y
@@ -164,38 +183,18 @@ install_dev_tools() {
 
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
 symlink_dotfiles() {
-    section "Symlinking Dotfiles"
+    section "Symlinking Dotfiles with Stow"
 
-    link_file() {
-        local src="$1" dst="$2"
-        if [[ -e "$dst" && ! -L "$dst" ]]; then
-            mv "$dst" "${dst}.bak.$(date +%s)"
-            warn "Backed up existing $dst"
-        fi
-        ln -sf "$src" "$dst"
-        ok "Linked $dst"
-    }
-
-    link_file "$DOTFILES/.zshrc"         "$HOME/.zshrc"
-    link_file "$DOTFILES/.aliases"       "$HOME/.aliases"
-    link_file "$DOTFILES/.functions"     "$HOME/.functions"
-    link_file "$DOTFILES/.path"          "$HOME/.path"
-    link_file "$DOTFILES/config/.gitconfig" "$HOME/.gitconfig"
-    link_file "$DOTFILES/config/.treeglobal" "$HOME/.treeglobal"
-
-    mkdir -p "$XDG_CONFIG_HOME"
-    link_file "$DOTFILES/config/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
-
-    mkdir -p "$XDG_CONFIG_HOME/ripgrep"
-    link_file "$DOTFILES/config/ripgrep/config" "$XDG_CONFIG_HOME/ripgrep/config"
-
-    mkdir -p "$XDG_CONFIG_HOME/kitty"
-    link_file "$DOTFILES/config/kitty/kitty.conf" "$XDG_CONFIG_HOME/kitty/kitty.conf"
-
-    mkdir -p "$XDG_CONFIG_HOME/ghostty"
-    link_file "$DOTFILES/config/ghostty/config" "$XDG_CONFIG_HOME/ghostty/config"
+    cd "$DOTFILES/stow" || { warn "stow directory not found"; return; }
     
-    ok "All dotfiles symlinked"
+    for pkg in *; do
+        if [[ -d "$pkg" ]]; then
+            stow -R -t "$HOME" "$pkg"
+            ok "Stowed $pkg"
+        fi
+    done
+    
+    cd "$DOTFILES"
 }
 
 # ── 5. Default Shell ─────────────────────────────────────────

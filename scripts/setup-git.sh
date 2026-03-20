@@ -19,14 +19,23 @@ echo -e "${CYAN}╚════════════════════�
 
 # ── 0. Load Defaults from dotfiles.toml ────────────────────────
 config_file="$(dirname "$0")/../dotfiles.toml"
+sops_file="$(dirname "$0")/../dotfiles.sops.toml"
+
 toml_name=""
 toml_email=""
 toml_signingkey=""
 
-if [[ -f "$config_file" ]]; then
+if [[ -f "$sops_file" ]] && command -v sops &>/dev/null; then
+    info "Reading defaults from dotfiles.sops.toml..."
+    content=$(sops -d "$sops_file" 2>/dev/null)
+elif [[ -f "$config_file" ]]; then
     info "Reading defaults from dotfiles.toml..."
+    content=$(cat "$config_file" 2>/dev/null)
+fi
+
+if [[ -n "${content:-}" ]]; then
     # Parse git section
-    eval $(python3 -c "
+    eval $(echo "$content" | python3 -c "
 import sys
 try:
     import tomllib
@@ -37,12 +46,11 @@ except ImportError:
         sys.exit(0)
 
 try:
-    with open('$config_file', 'rb') as f:
-        data = tomllib.load(f)
-        git = data.get('git', {})
-        for k, v in git.items():
-            if isinstance(v, str):
-                print(f'toml_{k}=\"{v}\"')
+    data = tomllib.loads(sys.stdin.read())
+    git = data.get('git', {})
+    for k, v in git.items():
+        if isinstance(v, str):
+            print(f'toml_{k}=\"{v}\"')
 except Exception:
     pass
 " 2>/dev/null)

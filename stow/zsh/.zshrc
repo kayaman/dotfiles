@@ -22,7 +22,7 @@ if [[ -z "${DOTFILES:-}" ]]; then
     # ${(%):-%N} expands to the path of the currently sourced file in zsh
     local zshrc_path=${(%):-%N}
     if [[ -n "$zshrc_path" ]]; then
-        DOTFILES="${zshrc_path:A:h}"
+        DOTFILES="${zshrc_path:A:h:h:h}" # stow/zsh/.zshrc -> dotfiles root
     else
         DOTFILES="$HOME/Projects/dotfiles"
     fi
@@ -41,7 +41,7 @@ source_if_exists "$HOME/.functions"
 
 # Source all scripts in snippets directory
 if [[ -d "$DOTFILES/snippets" ]]; then
-    for snippet in "$DOTFILES"/snippets/*.sh(N); do
+    for snippet in "$DOTFILES"/snippets/*.sh; do
         [[ -r "$snippet" ]] && source "$snippet"
     done
 fi
