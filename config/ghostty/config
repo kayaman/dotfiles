@@ -1,0 +1,66 @@
+# Ghostty Configuration - Tokyo Night (Dark & Discrete)
+
+# Font
+font-family = JetBrainsMono Nerd Font
+font-size = 14.5
+
+# Cursor
+cursor-style = block
+cursor-style-blink = false
+cursor-color = #c0caf5
+cursor-text = #1a1b26
+
+# Window
+window-padding-x = 4
+window-padding-y = 4
+window-decoration = false
+confirm-close-surface = false
+
+# Scrollback
+scrollback-limit = 10000
+
+# Mouse
+mouse-hide-while-typing = true
+
+# Bell
+audible-bell = false
+visual-bell = false
+
+# Colors (Tokyo Night theme - discrete and professional)
+background = #1a1b26
+foreground = #a9b1d6
+selection-background = #283457
+selection-foreground = #c0caf5
+
+# The 16 terminal colors
+# black
+palette = 0=#414868
+palette = 8=#414868
+
+# red
+palette = 1=#f7768e
+palette = 9=#f7768e
+
+# green
+palette = 2=#9ece6a
+palette = 10=#9ece6a
+
+# yellow
+palette = 3=#e0af68
+palette = 11=#e0af68
+
+# blue
+palette = 4=#7aa2f7
+palette = 12=#7aa2f7
+
+# magenta
+palette = 5=#bb9af7
+palette = 13=#bb9af7
+
+# cyan
+palette = 6=#7dcfff
+palette = 14=#7dcfff
+
+# white
+palette = 7=#c0caf5
+palette = 15=#c0caf5
