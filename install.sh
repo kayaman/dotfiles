@@ -120,30 +120,40 @@ install_dev_tools() {
     if [[ ! -d "$HOME/.nvm" ]]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
         ok "nvm installed"
+    else
+        ok "nvm already installed"
     fi
 
     # uv
-    if ! command -v uv &>/dev/null; then
+    if ! command -v uv &>/dev/null && [ ! -f "$HOME/.local/bin/uv" ] && [ ! -f "$HOME/.cargo/bin/uv" ]; then
         curl -LsSf https://astral.sh/uv/install.sh | sh
         ok "uv installed"
+    else
+        ok "uv already installed"
     fi
 
     # pyenv
     if [[ ! -d "$HOME/.pyenv" ]]; then
         curl -fsSL https://pyenv.run | bash
         ok "pyenv installed"
+    else
+        ok "pyenv already installed"
     fi
 
     # rustup
-    if ! command -v rustup &>/dev/null; then
+    if ! command -v rustup &>/dev/null && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
         ok "rustup installed"
+    else
+        ok "rustup already installed"
     fi
 
     # starship
-    if ! command -v starship &>/dev/null; then
+    if ! command -v starship &>/dev/null && [ ! -f "/usr/local/bin/starship" ]; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y
         ok "starship installed"
+    else
+        ok "starship already installed"
     fi
 }
 

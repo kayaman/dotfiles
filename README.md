@@ -74,9 +74,19 @@ dotfiles/
 - **Snippets**: Add any `.sh` file to the `snippets/` directory, and it will be automatically sourced by `.zshrc`.
 - **Aliases**: Edit `.aliases` for your custom command shortcuts.
 - **Functions**: Add reusable functions to `.functions`.
+- **Configuration & Secrets**: Copy `dotfiles.toml.example` to `dotfiles.toml` to manage your Git identity, API tokens, and feature toggles:
+  ```bash
+  cp dotfiles.toml.example dotfiles.toml
+  # Edit dotfiles.toml with your favorite editor
+  ```
+  Values in the `[secrets]` section are automatically exported as environment variables.
 - **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens.
 
 ## After Installation
 
 1. Restart your terminal or run `exec zsh`.
 2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render Starship prompt symbols.
+3. Configure your Git user and GPG signing preferences by running:
+   ```bash
+   ./scripts/setup-git.sh
+   ```
