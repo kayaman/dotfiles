@@ -77,3 +77,9 @@ alias dcup='docker compose up'
 alias dcdown='docker compose down'
 alias dcs='docker container stop'
 alias dcr='docker container rm'
+
+# ── Antigravity ──────────────────────────────────────────────
+alias agy='agy .'
+alias ags='antigravity-usage'
+alias quota='antigravity-usage'
+

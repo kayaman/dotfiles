@@ -53,34 +53,30 @@ dotfiles/
 ├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu)
 ├── wsl/
 │   └── install.sh                # Dedicated installer for WSL
-├── .zshrc                        # Main Zsh configuration
-├── .aliases                      # Custom shell aliases
-├── .functions                    # Custom shell functions
-├── .path                         # Environment PATH variables
+├── stow/                         # Stow packages for symlinking
+│   ├── zsh/                      # .zshrc, .aliases, .functions, .path
+│   ├── git/                      # .gitconfig
+│   ├── starship/                 # starship.toml
+│   ├── ripgrep/                  # ripgrep config
+│   ├── kitty/                    # kitty.conf
+│   └── ghostty/                  # ghostty config
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
-├── config/                       # Configuration for various tools
-│   ├── starship/starship.toml    # Starship prompt configuration
-│   ├── ripgrep/config            # Ripgrep configuration
-│   ├── kitty/kitty.conf          # Kitty terminal configuration
-│   ├── ghostty/config            # Ghostty terminal configuration
-│   ├── keyd/default.conf         # Keyd configuration
-│   ├── .gitconfig                # Global Git configuration
-│   └── .treeglobal               # Tree configuration
+├── scripts/                      # Setup scripts
 └── README.md
 ```
 
 ## Customization
 
 - **Snippets**: Add any `.sh` file to the `snippets/` directory, and it will be automatically sourced by `.zshrc`.
-- **Aliases**: Edit `.aliases` for your custom command shortcuts.
-- **Functions**: Add reusable functions to `.functions`.
+- **Aliases**: Edit `stow/zsh/.aliases` for your custom command shortcuts.
+- **Functions**: Add reusable functions to `stow/zsh/.functions`.
 - **Configuration & Secrets**: Copy `dotfiles.toml.example` to `dotfiles.toml` to manage your Git identity, API tokens, and feature toggles:
   ```bash
   cp dotfiles.toml.example dotfiles.toml
   # Edit dotfiles.toml with your favorite editor
   ```
-  Values in the `[secrets]` section are automatically exported as environment variables.
-- **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens.
+  **Advanced**: For encrypted secrets, create `dotfiles.sops.toml` and encrypt it using [SOPS](https://github.com/getsops/sops). If present, it will take precedence and securely decrypt values on-the-fly. Values in the `[secrets]` section are automatically exported as environment variables.
+- **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens not managed via SOPS.
 
 ## After Installation
 
