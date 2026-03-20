@@ -330,7 +330,9 @@ function aliases() {
 }
 
 function ght() {
-
+    echo "ght: function not implemented yet." >&2
+    echo "Usage: ght <args>  # TODO: define behavior" >&2
+    return 1
 }
 
 # ── Kubernetes ───────────────────────────────────────────────
