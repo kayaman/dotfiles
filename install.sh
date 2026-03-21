@@ -172,6 +172,14 @@ install_dev_tools() {
         ok "sops already installed"
     fi
 
+    # zed
+    if ! command -v zed &>/dev/null && [ ! -f "$HOME/.local/bin/zed" ]; then
+        curl -f https://zed.dev/install.sh | sh
+        ok "zed installed"
+    else
+        ok "zed already installed"
+    fi
+
     # starship
     if ! command -v starship &>/dev/null && [ ! -f "/usr/local/bin/starship" ]; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y
