@@ -174,6 +174,17 @@ install_dev_tools() {
     else
         ok "starship already installed"
     fi
+
+    if ! command -v code &>/dev/null && [ ! -f "/usr/local/bin/code" ]; then
+        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
+        echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" \
+        | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+        sudo zypper refresh
+        sudo zypper install --no-confirm code
+             ok "VSCode installed"
+    else
+        ok "VSCode already installed"
+    fi
 }
 
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
