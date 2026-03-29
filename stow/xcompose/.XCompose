@@ -1,0 +1,5 @@
+include "%L"
+
+# Fix dead_acute + c/C → ç/Ç (Brazilian Portuguese on US keyboard)
+<dead_acute> <c> : "ç" ccedilla
+<dead_acute> <C> : "Ç" Ccedilla

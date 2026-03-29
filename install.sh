@@ -226,7 +226,14 @@ symlink_dotfiles() {
     cd "$DOTFILES"
 }
 
-# ── 5. Default Shell ─────────────────────────────────────────
+# ── 5. Cedilla fix (openSUSE, BR/PT-BR on US keyboard) ───────
+fix_cedilla() {
+    [[ "$DISTRO" != "opensuse" ]] && return
+    section "Cedilla Fix"
+    bash "$DOTFILES/scripts/fix-cedilla.sh"
+}
+
+# ── 6. Default Shell ─────────────────────────────────────────
 set_default_shell() {
     section "Default Shell"
     local zsh_path
@@ -254,6 +261,7 @@ main() {
     install_oh_my_zsh
     install_dev_tools
     symlink_dotfiles
+    fix_cedilla
     set_default_shell
 
     echo ""
