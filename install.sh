@@ -108,7 +108,7 @@ install_oh_my_zsh() {
     )
 
     for plug in "${plugins[@]}"; do
-        local name="${plug%%:*}" repo="${plug##*:}"
+        local name="${plug%%:*}" repo="${plug#*:}"
         local dest="$ZSH_CUSTOM/plugins/$name"
         if [[ ! -d "$dest" ]]; then
             git clone --depth=1 "$repo" "$dest"
@@ -193,15 +193,36 @@ install_dev_tools() {
 symlink_dotfiles() {
     section "Symlinking Dotfiles with Stow"
 
+    if ! command -v stow &>/dev/null; then
+        err "stow is not installed — cannot symlink dotfiles"
+        err "Install it manually: sudo zypper install stow  (or apt-get install stow)"
+        return 1
+    fi
+
     cd "$DOTFILES/stow" || { warn "stow directory not found"; return; }
-    
+
     for pkg in *; do
-        if [[ -d "$pkg" ]]; then
-            stow -R -t "$HOME" "$pkg"
-            ok "Stowed $pkg"
+        [[ -d "$pkg" ]] || continue
+
+        # Remove broken symlinks that would block this package
+        while IFS= read -r src; do
+            dest="$HOME/${src#$pkg/}"
+            if [[ -L "$dest" && ! -e "$dest" ]]; then
+                warn "Removing broken symlink: $dest"
+                rm "$dest"
+            fi
+        done < <(find "$pkg" ! -type d)
+
+        # Dry-run first — skip packages that would conflict with existing files
+        if ! stow -n -R -t "$HOME" "$pkg" 2>/dev/null; then
+            warn "Skipping $pkg — conflicts with existing files (resolve manually)"
+            continue
         fi
+
+        stow -R -t "$HOME" "$pkg"
+        ok "Stowed $pkg"
     done
-    
+
     cd "$DOTFILES"
 }
 

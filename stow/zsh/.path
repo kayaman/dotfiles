@@ -8,3 +8,4 @@ _add_to_path() {
 
 _add_to_path "$HOME/.local/bin"
 _add_to_path "$HOME/.cargo/bin"
+_add_to_path "$HOME/.bun/bin"

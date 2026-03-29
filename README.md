@@ -53,13 +53,16 @@ dotfiles/
 ├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu)
 ├── wsl/
 │   └── install.sh                # Dedicated installer for WSL
-├── stow/                         # Stow packages for symlinking
+├── stow/                         # Stow packages — each is symlinked into $HOME
 │   ├── zsh/                      # .zshrc, .aliases, .functions, .path
-│   ├── git/                      # .gitconfig
-│   ├── starship/                 # starship.toml
-│   ├── ripgrep/                  # ripgrep config
-│   ├── kitty/                    # kitty.conf
-│   └── ghostty/                  # ghostty config
+│   ├── git/                      # .gitconfig, .gitignore_global
+│   ├── starship/                 # .config/starship.toml
+│   ├── ripgrep/                  # .config/ripgrep/config
+│   ├── readline/                 # .inputrc
+│   ├── tree/                     # .treeglobal (global ignore patterns for tree)
+│   ├── kitty/                    # .config/kitty/kitty.conf
+│   ├── keyd/                     # .config/keyd/default.conf
+│   └── ghostty/                  # .config/ghostty/config
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
 ├── scripts/                      # Setup scripts
 └── README.md

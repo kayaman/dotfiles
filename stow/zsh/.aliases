@@ -83,3 +83,6 @@ alias agy='agy .'
 alias ags='antigravity-usage'
 alias quota='antigravity-usage'
 
+alias tf='terraform'
+
+

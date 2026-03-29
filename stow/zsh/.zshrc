@@ -9,11 +9,13 @@ plugins=(
     git
     zsh-autosuggestions
     zsh-syntax-highlighting
-    zsh-completions
 )
 
-[[ -d "$ZSH/custom/plugins/zsh-completions/src" ]] && \
-    fpath+="$ZSH/custom/plugins/zsh-completions/src"
+if [[ -d "$ZSH/custom/plugins/zsh-completions" ]]; then
+    plugins+=(zsh-completions)
+    [[ -d "$ZSH/custom/plugins/zsh-completions/src" ]] && \
+        fpath+="$ZSH/custom/plugins/zsh-completions/src"
+fi
 
 source "$ZSH/oh-my-zsh.sh"
 
@@ -45,6 +47,8 @@ if [[ -d "$DOTFILES/snippets" ]]; then
         [[ -r "$snippet" ]] && source "$snippet"
     done
 fi
+
+export AWS_PROFILE=aggenda
 
 # ── Starship prompt ───────────────────────────────────────────
 command -v starship &>/dev/null && eval "$(starship init zsh)"
