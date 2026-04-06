@@ -176,12 +176,27 @@ install_dev_tools() {
     fi
 
     if ! command -v code &>/dev/null && [ ! -f "/usr/local/bin/code" ]; then
-        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
-        echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" \
-        | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
-        sudo zypper refresh
-        sudo zypper install --no-confirm code
-             ok "VSCode installed"
+        case "${DISTRO:-}" in
+            opensuse*|OpenSUSE*|suse*)
+                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+                echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" \
+                | sudo tee /etc/zypp/repos.d/vscode.repo > /dev/null
+                sudo zypper refresh
+                sudo zypper install --no-confirm code
+                ok "VSCode installed"
+                ;;
+            ubuntu*|Ubuntu*|debian*|Debian*)
+                curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.mgpg] https://packages.microsoft.com/repos/code stable main" \
+                | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                sudo apt-get update
+                sudo apt-get install -y code
+                ok "VSCode installed"
+                ;;
+            *)
+                warn "Unknown DISTRO '\${DISTRO:-}'; skipping VSCode installation"
+                ;;
+        esac
     else
         ok "VSCode already installed"
     fi
