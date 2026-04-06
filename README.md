@@ -50,7 +50,7 @@ bash install.sh
 
 #### WSL (Windows Subsystem for Linux)
 
-A slimmer installation for WSL environments (e.g., Ubuntu/Debian on WSL). Skips desktop-specific components and container daemons.
+A slimmer installation for WSL environments. Supports both **Ubuntu/Debian** and **openSUSE** in WSL. Skips desktop-specific components and container daemons.
 
 ```bash
 bash wsl/install.sh
