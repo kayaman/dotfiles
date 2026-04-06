@@ -1,0 +1,24 @@
+```bash
+DOTFILES="$HOME/Projects/dotfiles"
+
+source_if_exists() {
+    [[ -s "$1" ]] && . "$1"
+}
+
+source_if_exists "$DOTFILES/.aliases"
+
+source_if_exists "$HOME/.env"
+source_if_exists "$HOME/.env.sh"
+
+
+
+ght() {
+   echo $GITHUB_PAT | xclip -sel clip
+   echo "Token copied to clipboard!"
+}
+
+eval "$(ssh-agent -s)"
+export GPG_TTY=$(tty)
+
+export PATH="$PATH:$HOME/.local/bin"
+```
