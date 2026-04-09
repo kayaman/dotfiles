@@ -12,6 +12,8 @@ gpg-by-id() {
 
 set-gpg-id() {
     git config --global user.signingkey $1
+    git config --global commit.gpgsign true
+    git config --global tag.gpgSign true
 }
 # ── Navigation ───────────────────────────────────────────────
 
