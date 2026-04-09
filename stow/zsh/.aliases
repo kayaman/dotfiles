@@ -85,4 +85,6 @@ alias quota='antigravity-usage'
 
 alias tf='terraform'
 
+alias gpgls='gpg --list-secret-keys --keyid-format=long'
+
 
