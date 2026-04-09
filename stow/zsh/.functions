@@ -2,7 +2,13 @@
 
 # ─────────────────────────────────────────────────────────────
 #  .functions — utility functions
+
 # ─────────────────────────────────────────────────────────────
+
+function gpg-by-id() {
+    echo $(gpg --armor --export-options export-minimal --export $1) | xclip -sel clip
+    echo "The GPG public key was copied to clipboard"
+}
 
 # ── Navigation ───────────────────────────────────────────────
 
