@@ -5,11 +5,14 @@
 
 # ─────────────────────────────────────────────────────────────
 
-function gpg-by-id() {
+gpg-by-id() {
     echo $(gpg --armor --export-options export-minimal --export $1) | xclip -sel clip
     echo "The GPG public key was copied to clipboard"
 }
 
+set-gpg-id() {
+    git config --global user.signingkey $1
+}
 # ── Navigation ───────────────────────────────────────────────
 
 # Create dir and cd into it
