@@ -16,10 +16,10 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-info()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
-ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-err()   { echo -e "${RED}[ERR]${NC}   $*" >&2; }
+info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
+ok() { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+err() { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 
 # ── Distro detection ─────────────────────────────────────────
@@ -27,15 +27,16 @@ detect_distro() {
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "$ID" in
-            opensuse-tumbleweed|opensuse) echo "opensuse" ;;
-            ubuntu|pop|linuxmint|debian)  echo "ubuntu"   ;;
-            *)
-                warn "Unsupported distro: $ID — attempting Ubuntu-style install"
-                echo "ubuntu"
-                ;;
+        opensuse-tumbleweed | opensuse) echo "opensuse" ;;
+        ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
+        *)
+            warn "Unsupported distro: $ID — attempting Ubuntu-style install"
+            echo "ubuntu"
+            ;;
         esac
     else
-        err "Cannot detect distro"; exit 1
+        err "Cannot detect distro"
+        exit 1
     fi
 }
 
@@ -46,45 +47,48 @@ info "Detected distro: $DISTRO"
 install_system_packages() {
     section "System Packages"
     case "$DISTRO" in
-        opensuse)
-            sudo zypper refresh
-            sudo zypper install -y --no-recommends \
-                git curl wget unzip tar make gcc gcc-c++ gawk jq \
-                fzf bat eza fd ripgrep git-delta htop tmux tree stow \
-                python3 python3-pip python3-pipx nodejs npm \
-                zsh podman buildah distrobox docker docker-compose
-            ;;
-        ubuntu)
-            sudo apt-get update
-            sudo apt-get install -y \
-                git curl wget unzip tar build-essential gawk jq \
-                fzf bat fd-find ripgrep htop tmux tree stow \
-                python3 python3-pip python3-venv pipx \
-                zsh podman docker.io docker-compose
+    opensuse)
+        sudo zypper refresh
+        sudo zypper install -y --no-recommends \
+            git curl wget unzip tar make gcc gcc-c++ gawk jq \
+            fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt \
+            python3 python3-pip python3-pipx nodejs npm \
+            zsh podman buildah distrobox docker docker-compose
+        ;;
+    ubuntu)
+        sudo apt-get update
+        sudo apt-get install -y \
+            git curl wget unzip tar build-essential gawk jq \
+            fzf bat fd-find ripgrep htop tmux tree stow \
+            python3 python3-pip python3-venv pipx \
+            zsh podman docker.io docker-compose
 
-            # Ubuntu aliases for modern tools
-            [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-            [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
+        # Ubuntu aliases for modern tools
+        [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
+        [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
-            # Install eza
-            if ! command -v eza &>/dev/null; then
-                sudo mkdir -p /etc/apt/keyrings
-                if sudo apt-get install -y gnupg >/dev/null && \
-                   wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
-                    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
-                    sudo apt-get update && sudo apt-get install -y eza || { warn "eza install failed"; sudo rm -f /etc/apt/sources.list.d/gierens.list; }
-                else
-                    warn "eza install failed: could not import GPG key"
-                    sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-                fi
+        # Install eza
+        if ! command -v eza &>/dev/null; then
+            sudo mkdir -p /etc/apt/keyrings
+            if sudo apt-get install -y gnupg >/dev/null &&
+                wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
+                echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
+                sudo apt-get update && sudo apt-get install -y eza || {
+                    warn "eza install failed"
+                    sudo rm -f /etc/apt/sources.list.d/gierens.list
+                }
+            else
+                warn "eza install failed: could not import GPG key"
+                sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
             fi
+        fi
 
-            # Node.js
-            if ! command -v node &>/dev/null; then
-                curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-                sudo apt-get install -y nodejs
-            fi
-            ;;
+        # Node.js
+        if ! command -v node &>/dev/null; then
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+        fi
+        ;;
     esac
     ok "System packages installed"
 }
@@ -191,25 +195,25 @@ install_dev_tools() {
     # vscode
     if ! command -v code &>/dev/null && [ ! -f "/usr/local/bin/code" ]; then
         case "$DISTRO" in
-            opensuse)
-                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-                echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" \
-                | sudo tee /etc/zypp/repos.d/vscode.repo > /dev/null
-                sudo zypper refresh
-                sudo zypper install --no-confirm code
-                ok "VSCode installed"
-                ;;
-            ubuntu)
-                curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
-                | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
-                sudo apt-get update
-                sudo apt-get install -y code
-                ok "VSCode installed"
-                ;;
-            *)
-                warn "Unknown distro '$DISTRO'; skipping VSCode installation"
-                ;;
+        opensuse)
+            sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+            echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" |
+                sudo tee /etc/zypp/repos.d/vscode.repo >/dev/null
+            sudo zypper refresh
+            sudo zypper install --no-confirm code
+            ok "VSCode installed"
+            ;;
+        ubuntu)
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" |
+                sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
+            sudo apt-get update
+            sudo apt-get install -y code
+            ok "VSCode installed"
+            ;;
+        *)
+            warn "Unknown distro '$DISTRO'; skipping VSCode installation"
+            ;;
         esac
     else
         ok "VSCode already installed"
@@ -226,7 +230,10 @@ symlink_dotfiles() {
         return 1
     fi
 
-    cd "$DOTFILES/stow" || { warn "stow directory not found"; return; }
+    cd "$DOTFILES/stow" || {
+        warn "stow directory not found"
+        return
+    }
 
     for pkg in *; do
         [[ -d "$pkg" ]] || continue
@@ -264,11 +271,14 @@ fix_cedilla() {
 set_default_shell() {
     section "Default Shell"
     local zsh_path
-    zsh_path="$(command -v zsh 2>/dev/null)" || { warn "zsh not found"; return; }
+    zsh_path="$(command -v zsh 2>/dev/null)" || {
+        warn "zsh not found"
+        return
+    }
 
     if [[ "$SHELL" != "$zsh_path" ]]; then
         if ! grep -qxF "$zsh_path" /etc/shells; then
-            echo "$zsh_path" | sudo tee -a /etc/shells > /dev/null
+            echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
         fi
         chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
         ok "Default shell set to zsh"
