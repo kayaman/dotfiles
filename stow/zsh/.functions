@@ -320,6 +320,40 @@ findbig() {
     find . -type f -size +"$size" -exec ls -lh {} \; 2>/dev/null | awk '{print $5 " " $9}' | sort -hr
 }
 
+# _dot_toml_get <file> <section> <key>
+#   Reads a bare (unquoted) value from a TOML file.
+#   Supports quoted strings, integers, booleans; one value per line.
+#   Does NOT support multi-line values, arrays, or inline tables.
+#
+#   Example:
+#     _dot_toml_get ~/Projects/dotfiles/dotfiles.toml git signingkey
+#     _dot_toml_get ~/Projects/dotfiles/dotfiles.toml secrets GITHUB_TOKEN
+_dot_toml_get() {
+    local file="$1" section="$2" key="$3"
+    [[ -f "$file" ]] || { echo "_dot_toml_get: file not found: $file" >&2; return 1; }
+    awk -v section="$section" -v key="$key" '
+        /^\[/ {
+            current = substr($0, 2, length($0)-2)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", current)
+        }
+        current == section && /^[[:space:]]*[^#]/ {
+            if (match($0, /^[[:space:]]*[^=[:space:]]+[[:space:]]*=[[:space:]]*/)) {
+                k = substr($0, 1, RLENGTH)
+                gsub(/^[[:space:]]+|[[:space:]]*=[[:space:]]*$/, "", k)
+                if (k == key) {
+                    v = substr($0, RLENGTH + 1)
+                    gsub(/#[^"]*$/, "", v)
+                    gsub(/^[[:space:]\"'"'"']+|[[:space:]\"'"'"']+$/, "", v)
+                    print v
+                    found = 1
+                    exit 0
+                }
+            }
+        }
+        END { exit (found ? 0 : 1) }
+    ' "$file"
+}
+
 # -- dot -- dotfiles sync manager --
 # Usage:  dot [command] [args]
 # Secrets: add ERE patterns to $DOTFILES/.dotfilter (one per line).
@@ -362,7 +396,16 @@ dot() {
             "filter-show"     "List active .dotfilter patterns" \
             "filter-add <p>"  "Append an ERE pattern to .dotfilter" \
             "filter-install"  "Register git clean filter on this machine" \
+            "config get <s.k>" "Read a value from dotfiles.toml (section.key)" \
+            "config list [s]"  "List keys in a section (or all sections)" \
+            "config apply"    "Export [secrets] into the current shell" \
             "check"           "Dry-run: show lines that would be redacted"
+        echo ""
+        echo -e "${_b}CONFIG (dotfiles.toml)${_n}"
+        echo "  dot config get  git.signingkey"
+        echo "  dot config get  secrets.GITHUB_TOKEN"
+        echo "  dot config list secrets"
+        echo "  dot config apply          # exports [secrets] into current shell"
         echo ""
         echo -e "${_b}SECRET-LINE IGNORING (.dotfilter)${_n}"
         echo "  Add ERE patterns (one per line) to DOTFILES/.dotfilter."
@@ -512,6 +555,85 @@ dot() {
             echo -e "$_ok filter=dot-secrets added to .gitattributes"
         fi
         echo -e "$_ok Filter installed. Secrets stripped at git-add time."
+        ;;
+
+    config)
+        local TOML="$DOTFILES/dotfiles.toml"
+        local subcmd="${1:-}"; shift 2>/dev/null || true
+        case "$subcmd" in
+
+        get)
+            local ref="${1:-}"
+            if [[ -z "$ref" || "$ref" != *.* ]]; then
+                echo "Usage: dot config get <section>.<key>" >&2
+                return 1
+            fi
+            local sec="${ref%%.*}" key="${ref#*.}"
+            if [[ ! -f "$TOML" ]]; then
+                echo -e "${_r}Not found:${_n} $TOML" >&2
+                echo "Copy dotfiles.toml.example -> dotfiles.toml and fill in values." >&2
+                return 1
+            fi
+            local val
+            val=$(_dot_toml_get "$TOML" "$sec" "$key") || {
+                echo -e "${_r}Not found:${_n} [$sec] $key in $TOML" >&2
+                return 1
+            }
+            echo "$val"
+            ;;
+
+        list)
+            local sec="${1:-}"
+            if [[ ! -f "$TOML" ]]; then
+                echo -e "${_r}Not found:${_n} $TOML" >&2; return 1
+            fi
+            if [[ -z "$sec" ]]; then
+                grep -E '^\[' "$TOML" | tr -d '[]' | while IFS= read -r s; do
+                    echo -e "  ${_c}[$s]${_n}"
+                done
+            else
+                awk -v section="$sec" '
+                    /^\[/ {
+                        current = substr($0,2,length($0)-2)
+                        gsub(/^[[:space:]]+|[[:space:]]+$/, "", current)
+                    }
+                    current == section && /^[[:space:]]*[^#\[]/ {
+                        line = $0
+                        gsub(/^[[:space:]]+/, "", line)
+                        if (line != "") print "  " line
+                    }
+                ' "$TOML"
+            fi
+            ;;
+
+        apply)
+            if [[ ! -f "$TOML" ]]; then
+                echo -e "${_r}Not found:${_n} $TOML" >&2; return 1
+            fi
+            local count=0
+            while IFS= read -r rawline; do
+                [[ -z "$rawline" || "$rawline" == \#* ]] && continue
+                local k v
+                k="${rawline%%=*}";  k="${k//[[:space:]]/}"
+                v="${rawline#*=}"
+                v="${v%%\#*}"
+                v="${v#"${v%%[! ]*}"}";  v="${v%"${v##*[! ]}"}"
+                v="${v#[\'\"]}"; v="${v%[\'\"]}";
+                export "$k=$v"
+                echo -e "$_ok Exported ${_y}${k}${_n}"
+                (( count++ ))
+            done < <(awk '
+                /^\[/ { current = substr($0,2,length($0)-2); gsub(/^[[:space:]]+|[[:space:]]+$/,"",current) }
+                current == "secrets" && /^[[:space:]]*[^#]/ && /=/ { print $0 }
+            ' "$TOML")
+            [[ "$count" -eq 0 ]] && echo -e "${_y}No entries in [secrets] section.${_n}"
+            ;;
+
+        *)
+            echo "Usage: dot config <get <section.key> | list [section] | apply>" >&2
+            return 1
+            ;;
+        esac
         ;;
 
     check)

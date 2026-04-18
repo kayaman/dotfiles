@@ -88,5 +88,5 @@ alias tf='terraform'
 alias gpgls='gpg --list-secret-keys --keyid-format=long'
 
 
-alias pb='p ~/Projects/blogmarks'
-alias pm='p ~/Projects/magj-dev'
+alias pb='cd "$HOME/Projects/blogmarks"'
+alias pm='cd "$HOME/Projects/magj-dev"'
