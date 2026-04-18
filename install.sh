@@ -154,12 +154,12 @@ install_dev_tools() {
     fi
 
     # antigravity-usage
-    if ! command -v antigravity-usage &>/dev/null; then
-        sudo npm install -g antigravity-usage
-        ok "antigravity-usage installed"
-    else
-        ok "antigravity-usage already installed"
-    fi
+    # if ! command -v antigravity-usage &>/dev/null; then
+    #     sudo npm install -g antigravity-usage
+    #     ok "antigravity-usage installed"
+    # else
+    #     ok "antigravity-usage already installed"
+    # fi
 
     # sops
     if ! command -v sops &>/dev/null; then

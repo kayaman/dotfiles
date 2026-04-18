@@ -52,4 +52,19 @@ export PATH=$PATH:/home/kayaman/.local/bin
 
 # ── Starship prompt ───────────────────────────────────────────
 command -v starship &>/dev/null && eval "$(starship init zsh)"
+<<<<<<< HEAD
 export GPG_TTY=$(tty)
+||||||| parent of 28332fb (feat: update dotfiles with new aliases, konsole profile, and nvm configuration)
+=======
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/kayaman/google-cloud-sdk/path.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/kayaman/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/completion.zsh.inc'; fi
+export PATH="$HOME/development/flutter/bin:$PATH"
+>>>>>>> 28332fb (feat: update dotfiles with new aliases, konsole profile, and nvm configuration)
