@@ -6,6 +6,7 @@
     pager = delta
     autocrlf = input
     whitespace = fix
+    hooksPath = ~/.githooks
 
 [pull]
     rebase = true

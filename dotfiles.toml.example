@@ -35,16 +35,12 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 # Keep sensitive tokens here instead of in .zshrc / .bash_profile.
 [secrets]
 # GITHUB_TOKEN          = "ghp_..."
+# GH_TOKEN              = "ghp_..."
 # ANTHROPIC_API_KEY     = "sk-ant-..."
 # OPENAI_API_KEY        = "sk-..."
 # AWS_ACCESS_KEY_ID     = ""
 # AWS_SECRET_ACCESS_KEY = ""
-# HOMEBREW_GITHUB_API_TOKEN = ""
-# CLOUDFLARE_API_TOKEN  = ""
 # DIGITALOCEAN_TOKEN    = ""
-# VERCEL_TOKEN          = ""
-# FLY_API_TOKEN         = ""
-# DOPPLER_TOKEN         = ""
 # NPM_TOKEN             = ""
 
 
