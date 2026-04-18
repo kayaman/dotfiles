@@ -48,7 +48,8 @@ if [[ -d "$DOTFILES/snippets" ]]; then
     done
 fi
 
-export AWS_PROFILE=aggenda
+export PATH=$PATH:/home/kayaman/.local/bin
 
 # ── Starship prompt ───────────────────────────────────────────
 command -v starship &>/dev/null && eval "$(starship init zsh)"
+export GPG_TTY=$(tty)
