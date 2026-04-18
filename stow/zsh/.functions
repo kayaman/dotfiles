@@ -500,3 +500,7 @@ install_claude_code(){
     curl -fsSL https://claude.ai/install.sh | bash
     echo "Installation complete"
 }
+
+install_gemini(){
+    npm install -g @google/gemini-cli
+}

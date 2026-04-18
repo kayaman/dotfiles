@@ -120,7 +120,7 @@ install_oh_my_zsh() {
 # ── 3. Dev Tools & Managers ──────────────────────────────────
 install_dev_tools() {
     section "Development Tools"
-    
+
     # nvm
     if [[ ! -d "$HOME/.nvm" ]]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
@@ -186,6 +186,33 @@ install_dev_tools() {
         ok "starship installed"
     else
         ok "starship already installed"
+    fi
+
+    # vscode
+    if ! command -v code &>/dev/null && [ ! -f "/usr/local/bin/code" ]; then
+        case "$DISTRO" in
+            opensuse)
+                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+                echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" \
+                | sudo tee /etc/zypp/repos.d/vscode.repo > /dev/null
+                sudo zypper refresh
+                sudo zypper install --no-confirm code
+                ok "VSCode installed"
+                ;;
+            ubuntu)
+                curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+                | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                sudo apt-get update
+                sudo apt-get install -y code
+                ok "VSCode installed"
+                ;;
+            *)
+                warn "Unknown distro '$DISTRO'; skipping VSCode installation"
+                ;;
+        esac
+    else
+        ok "VSCode already installed"
     fi
 }
 
