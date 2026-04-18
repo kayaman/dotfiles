@@ -343,7 +343,7 @@ _dot_toml_get() {
                 if (k == key) {
                     v = substr($0, RLENGTH + 1)
                     gsub(/#[^"]*$/, "", v)
-                    gsub(/^[[:space:]\"'"'"']+|[[:space:]\"'"'"']+$/, "", v)
+                    gsub(/^[[:space:]"'"'"']+|[[:space:]"'"'"']+$/, "", v)
                     print v
                     found = 1
                     exit 0
