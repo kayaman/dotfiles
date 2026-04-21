@@ -1,0 +1,12 @@
+# dot-filter — secret-line patterns (ERE, case-insensitive)
+# Lines in tracked files matching any pattern are replaced with
+# '# [REDACTED by dot-filter]' in the git index at commit time.
+# Working-tree files are never modified.
+# Add patterns with: dot filter-add <pattern>
+
+signingkey\s*=.*
+GITHUB_TOKEN\s*=.*
+OPENAI_API_KEY\s*=.*
+password\s*=.*
+secret\s*=.*
+api_key\s*=.*
