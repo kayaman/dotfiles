@@ -4,3 +4,4 @@ bash/.bash_local
 # OS
 .DS_Store
 Thumbs.db
+dotfiles.toml
