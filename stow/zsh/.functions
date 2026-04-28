@@ -964,11 +964,25 @@ function uv2req() {
         mv "$tmpfile" requirements.txt
 }
 
-install_claude_code() {
+function install_claude_code() {
         curl -fsSL https://claude.ai/install.sh | bash
         echo "Installation complete"
 }
 
-install_gemini() {
+function install_gemini() {
         npm install -g @google/gemini-cli
+}
+
+function eval_ssh_agent() {
+        eval "$(ssh-agent -s)"
+}
+
+function ght() {
+        echo $GITHUB_PAT | xclip -sel clip
+        echo "Token copied to clipboard!"
+}
+
+function ghk() {
+        echo $GITHUB_KAYAMAN_PAT | xclip -sel clip
+        echo "Token copied to clipboard!"
 }
