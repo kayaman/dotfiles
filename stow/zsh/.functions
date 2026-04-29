@@ -6,7 +6,7 @@
 # ─────────────────────────────────────────────────────────────
 
 gpg-by-id() {
-        echo $(gpg --armor --export-options export-minimal --export $1) | xclip -sel clip
+        echo "$(gpg --armor --export-options export-minimal --export "$1")" | xclip -sel clip
         echo "The GPG public key was copied to clipboard"
 }
 
@@ -102,21 +102,21 @@ setup-gpg-signing() {
 # ── Navigation ───────────────────────────────────────────────
 
 # Create dir and cd into it
-mkcd() { mkdir -p "$1" && cd "$1"; }
+mkcd() { mkdir -p "$1" && cd "$1" || return; }
 
 # Interactive cd with fzf
 cdf() {
         local dir
         dir="$(fd --type d --hidden --follow --exclude .git 2>/dev/null | fzf --preview 'eza --tree --level=1 --icons {}')" &&
-                cd "$dir"
+                cd "$dir" || return
 }
 
 p() {
-        cd ~/Projects/"$1"
+        cd ~/Projects/"$1" || return
 }
 
 # Go to git repo root
-groot() { cd "$(git rev-parse --show-toplevel 2>/dev/null || echo '.')"; }
+groot() { cd "$(git rev-parse --show-toplevel 2>/dev/null || echo '.')" || return; }
 
 # ── File search ──────────────────────────────────────────────
 
@@ -181,7 +181,7 @@ mkvenv() {
 tsinit() {
         local name="${1:-.}"
         if [[ "$name" != "." ]]; then
-                mkdir -p "$name" && cd "$name"
+                mkdir -p "$name" && cd "$name" || return
         fi
         npm init -y
         npm install --save-dev typescript @types/node ts-node
@@ -293,6 +293,7 @@ ship() {
 
         local current_branch
         current_branch="$(git rev-parse --abbrev-ref HEAD)"
+        # shellcheck disable=SC2034 # current_branch appears unused; left for informational purposes
 
         local latest_tag
         latest_tag="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
@@ -519,7 +520,7 @@ dot() {
                 ;;
 
         cd)
-                cd "$DOTFILES"
+                cd "$DOTFILES" || return
                 ;;
 
         edit)
@@ -542,8 +543,8 @@ dot() {
                 )
                 echo ""
                 local behind ahead
-                behind=$(cd "$DOTFILES" && git rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
-                ahead=$(cd "$DOTFILES" && git rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
+                behind="$(cd "$DOTFILES" && git rev-list --count "HEAD..@{u}" 2>/dev/null || echo 0)"
+                ahead="$(cd "$DOTFILES" && git rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"
                 [[ "$ahead" -gt 0 ]] && echo -e "$_info ${_y}${ahead} commit(s) ahead${_n} of origin"
                 [[ "$behind" -gt 0 ]] && echo -e "$_info ${_r}${behind} commit(s) behind${_n} -- run: dot pull"
                 [[ "$ahead" -eq 0 && "$behind" -eq 0 ]] && echo -e "$_ok In sync with origin"
@@ -563,7 +564,7 @@ dot() {
                 if command -v stow &>/dev/null && [[ -d "$DOTFILES/stow" ]]; then
                         echo -e "$_info Re-applying stow links..."
                         (cd "$DOTFILES" && stow --dir="$DOTFILES/stow" --target="$HOME" \
-                                --restow $(ls stow) 2>/dev/null) &&
+                                --restow "$(ls stow)" 2>/dev/null) &&
                                 echo -e "$_ok Stow links updated." ||
                                 echo -e "${_y}[WARN]${_n}  stow failed; run install.sh manually."
                 fi
@@ -572,7 +573,7 @@ dot() {
         push)
                 local msg="${*:-chore: sync dotfiles $(date +%Y-%m-%d)}"
                 (
-                        cd "$DOTFILES"
+                        cd "$DOTFILES" || return
                         if [[ -z "$(git status --porcelain)" ]]; then
                                 echo -e "$_ok Nothing to commit."
                         else
@@ -588,7 +589,7 @@ dot() {
         sync)
                 local msg="${*:-chore: sync dotfiles $(date +%Y-%m-%d)}"
                 (
-                        cd "$DOTFILES"
+                        cd "$DOTFILES" || return
                         if [[ -n "$(git status --porcelain)" ]]; then
                                 echo -e "$_info Committing local changes..."
                                 git add -A
@@ -647,7 +648,7 @@ dot() {
                         >"$filter_script"
                 chmod +x "$filter_script"
                 (
-                        cd "$DOTFILES"
+                        cd "$DOTFILES" || return
                         git config filter.dot-secrets.clean "$filter_script"
                         git config filter.dot-secrets.smudge "cat"
                         git config filter.dot-secrets.required false
@@ -781,7 +782,7 @@ dot() {
         esac
 }
 # $_ = last arg of previous command (mkdir)
-mk() { mkdir -p "$@" && cd "$_"; }
+mk() { mkdir -p "$@" && cd "$_" || return; }
 
 function aliases() {
         local editor aliases_file
@@ -800,9 +801,8 @@ function aliases() {
 }
 
 function ght() {
-        echo "ght: function not implemented yet." >&2
-        echo "Usage: ght <args>  # TODO: define behavior" >&2
-        return 1
+        echo $GITHUB_PAT | xclip -sel clip
+        echo "Token copied to clipboard!"
 }
 
 # ── Kubernetes ───────────────────────────────────────────────
@@ -823,7 +823,8 @@ function backup() {
 
 # Create a data URL from a file
 function dataurl() {
-        local mimeType=$(file -b --mime-type "$1")
+        local mimeType
+        mimeType=$(file -b --mime-type "$1")
         if [[ $mimeType == text/* ]]; then
                 mimeType="${mimeType};charset=utf-8"
         fi
@@ -882,11 +883,6 @@ function tm() {
 
 function gbc() {
         git branch "$1" && git checkout "$1"
-}
-
-function ght() {
-        echo $GITHUB_TOKEN | xclip -sel clip
-        echo "GitHub token copied to clipboard!"
 }
 
 function gfp() {
@@ -975,11 +971,6 @@ function install_gemini() {
 
 function eval_ssh_agent() {
         eval "$(ssh-agent -s)"
-}
-
-function ght() {
-        echo $GITHUB_PAT | xclip -sel clip
-        echo "Token copied to clipboard!"
 }
 
 function ghk() {
