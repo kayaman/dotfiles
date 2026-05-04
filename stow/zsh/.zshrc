@@ -1,17 +1,37 @@
 #!/usr/bin/env zsh
 
 # ── Profiling Infrastructure ─────────────────────────────────
+# Activated by: ZSH_PROF=1 zsh   or   dot profiler
+# Writes structured timing data to $ZSH_PROF_LOG (tab-separated).
+# Wraps source/. to auto-instrument every sourced file.
 if [[ -n "$ZSH_PROF" ]]; then
     zmodload zsh/datetime
     zsh_start_time=$EPOCHREALTIME
     zsh_last_time=$zsh_start_time
+    : "${ZSH_PROF_LOG:=/tmp/zsh-profile-$$.log}"
+    export ZSH_PROF_LOG
+    : > "$ZSH_PROF_LOG"
+
     log_step() {
         local now=$EPOCHREALTIME
-        local elapsed=$(( now - zsh_start_time ))
-        local delta=$(( now - zsh_last_time ))
-        printf ">> %0.4fs (+%0.4fs) %s\n" $elapsed $delta "$1"
+        local delta=$(( (now - zsh_last_time) * 1000 ))
+        local elapsed=$(( (now - zsh_start_time) * 1000 ))
+        printf "%0.2f\t%0.2f\t%s\n" "$elapsed" "$delta" "$1" >> "$ZSH_PROF_LOG"
         zsh_last_time=$now
     }
+
+    # Wrap source/. to auto-log every sourced file
+    _prof_source() {
+        local _pf="$1"
+        local _pl="${_pf/$HOME/~}"
+        log_step "source:begin $_pl"
+        builtin source "$@"
+        local _rc=$?
+        log_step "source:end   $_pl"
+        return $_rc
+    }
+    alias source='_prof_source'
+    alias .='_prof_source'
 else
     log_step() { :; }
 fi
@@ -101,3 +121,9 @@ log_step "Flutter"
 export PATH="$HOME/development/flutter/bin:$PATH"
 
 log_step "Finished .zshrc"
+
+# ── Profiling Cleanup ─────────────────────────────────────────
+if [[ -n "$ZSH_PROF" ]]; then
+    unalias source 2>/dev/null
+    unalias . 2>/dev/null
+fi
