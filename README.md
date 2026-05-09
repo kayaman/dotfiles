@@ -2,7 +2,7 @@
 
 A clean, modern **Zsh** setup with **Oh My Zsh** and **Starship** prompt, tailored for developers.
 
-Supports **Linux (openSUSE Tumbleweed / Ubuntu / Raspberry Pi OS)** and **WSL**.
+Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)** and **WSL**.
 
 ## Features
 
@@ -42,9 +42,9 @@ git clone https://github.com/kayaman/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
-#### Native Linux (openSUSE / Ubuntu)
+#### Native Linux (openSUSE / Ubuntu / Fedora)
 
-Installs the full suite of CLI tools, dev environments, and container engines (Podman & Docker).
+Installs the full suite of CLI tools, dev environments, and container engines (Podman + Buildah + Distrobox; Docker on openSUSE/Ubuntu).
 
 ```bash
 bash install.sh
@@ -60,7 +60,7 @@ bash install.sh
 
 #### WSL (Windows Subsystem for Linux)
 
-A slimmer installation for WSL environments. Supports both **Ubuntu/Debian** and **openSUSE** in WSL. Skips desktop-specific components and container daemons.
+A slimmer installation for WSL environments. Supports **Ubuntu/Debian**, **openSUSE**, and **Fedora** in WSL. Skips desktop-specific components and container daemons.
 
 ```bash
 bash wsl/install.sh
@@ -71,7 +71,7 @@ bash wsl/install.sh
 ```
 dotfiles/
 ├── bootstrap.sh                  # One-liner bootstrap: clones repo and runs the right installer
-├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu)
+├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu/Fedora)
 ├── wsl/
 │   └── install.sh                # Dedicated installer for WSL
 ├── stow/                         # Stow packages — each is symlinked into $HOME

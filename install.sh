@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Dotfiles Installer — Linux (openSUSE & Ubuntu)
+#  Dotfiles Installer — Linux (openSUSE, Ubuntu, Fedora)
 #  Installs system packages, dev tools, Oh My Zsh, Starship, and symlinks dotfiles.
 # =============================================================================
 
@@ -39,9 +39,10 @@ detect_distro() {
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "$ID" in
-        opensuse-tumbleweed | opensuse) echo "opensuse" ;;
+        opensuse-tumbleweed | opensuse*) echo "opensuse" ;;
         raspbian) echo "raspberry" ;;
         ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
+        fedora | rhel | rocky | almalinux) echo "fedora" ;;
         *)
             warn "Unsupported distro: $ID — attempting Ubuntu-style install"
             echo "ubuntu"
@@ -104,6 +105,13 @@ install_system_packages() {
             curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
             sudo apt-get install -y nodejs
         fi
+        ;;
+    fedora)
+        sudo dnf install -y --setopt=install_weak_deps=False \
+            git curl wget unzip tar make gcc gcc-c++ gawk jq \
+            fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt \
+            python3 python3-pip pipx nodejs npm \
+            zsh podman buildah distrobox
         ;;
     esac
     ok "System packages installed"
@@ -231,6 +239,14 @@ install_dev_tools() {
             sudo apt-get install -y code
             ok "VSCode installed"
             ;;
+        fedora)
+            sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+            echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" |
+                sudo tee /etc/yum.repos.d/vscode.repo >/dev/null
+            sudo dnf check-update -y || true
+            sudo dnf install -y code
+            ok "VSCode installed"
+            ;;
         *)
             warn "Unknown distro '$DISTRO'; skipping VSCode installation"
             ;;
@@ -246,7 +262,7 @@ symlink_dotfiles() {
 
     if ! command -v stow &>/dev/null; then
         err "stow is not installed — cannot symlink dotfiles"
-        err "Install it manually: sudo zypper install stow  (or apt-get install stow)"
+        err "Install it manually: sudo zypper install stow  (or apt-get install stow / dnf install stow)"
         return 1
     fi
 
@@ -280,9 +296,12 @@ symlink_dotfiles() {
     cd "$DOTFILES"
 }
 
-# ── 5. Cedilla fix (openSUSE, BR/PT-BR on US keyboard) ───────
+# ── 5. Cedilla fix (RPM-based distros, BR/PT-BR on US keyboard) ───────
 fix_cedilla() {
-    [[ "$DISTRO" != "opensuse" ]] && return
+    case "$DISTRO" in
+    opensuse | fedora) ;;
+    *) return ;;
+    esac
     section "Cedilla Fix"
     bash "$DOTFILES/scripts/fix-cedilla.sh"
 }

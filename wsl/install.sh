@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Dotfiles Installer — WSL (Ubuntu/Debian/openSUSE)
+#  Dotfiles Installer — WSL (Ubuntu/Debian/openSUSE/Fedora)
 #  Installs system packages, dev tools, Oh My Zsh, Starship, and symlinks dotfiles.
 # =============================================================================
 
@@ -27,8 +27,9 @@ detect_distro() {
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "$ID" in
-        opensuse-tumbleweed | opensuse) echo "opensuse" ;;
+        opensuse-tumbleweed | opensuse*) echo "opensuse" ;;
         ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
+        fedora | rhel | rocky | almalinux) echo "fedora" ;;
         *)
             warn "Unsupported distro: $ID — attempting Ubuntu-style install"
             echo "ubuntu"
@@ -83,6 +84,13 @@ install_system_packages() {
                 sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
             fi
         fi
+        ;;
+    fedora)
+        sudo dnf install -y --setopt=install_weak_deps=False \
+            git curl wget unzip tar make gcc gcc-c++ gawk jq \
+            fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt \
+            python3 python3-pip pipx \
+            zsh
         ;;
     esac
 
@@ -198,6 +206,7 @@ symlink_dotfiles() {
         case "$DISTRO" in
         opensuse) err "Install it manually: sudo zypper install stow" ;;
         ubuntu) err "Install it manually: sudo apt-get install stow" ;;
+        fedora) err "Install it manually: sudo dnf install stow" ;;
         esac
         return 1
     fi

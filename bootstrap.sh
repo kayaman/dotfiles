@@ -21,7 +21,7 @@ err()  { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 # ── Require git ──────────────────────────────────────────────
 if ! command -v git &>/dev/null; then
     err "git is required but not installed."
-    err "Install it first: sudo apt-get install git  (or: sudo zypper install git)"
+    err "Install it first: sudo apt-get install git  (or: sudo zypper install git / sudo dnf install git)"
     exit 1
 fi
 
