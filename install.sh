@@ -22,12 +22,25 @@ warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err() { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 
+# ── Architecture detection ───────────────────────────────────
+case "$(uname -m)" in
+x86_64 | amd64) ARCH="amd64" ;;
+aarch64 | arm64) ARCH="arm64" ;;
+armv7l | armhf) ARCH="armhf" ;;
+*) ARCH="$(uname -m)" ;;
+esac
+
 # ── Distro detection ─────────────────────────────────────────
 detect_distro() {
+    if [[ -r /proc/device-tree/model ]] && grep -qi "raspberry pi" /proc/device-tree/model 2>/dev/null; then
+        echo "raspberry"
+        return
+    fi
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "$ID" in
         opensuse-tumbleweed | opensuse) echo "opensuse" ;;
+        raspbian) echo "raspberry" ;;
         ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
         *)
             warn "Unsupported distro: $ID — attempting Ubuntu-style install"
@@ -41,7 +54,7 @@ detect_distro() {
 }
 
 DISTRO="$(detect_distro)"
-info "Detected distro: $DISTRO"
+info "Detected distro: $DISTRO ($ARCH)"
 
 # ── 1. System packages ───────────────────────────────────────
 install_system_packages() {
@@ -55,13 +68,16 @@ install_system_packages() {
             python3 python3-pip python3-pipx nodejs npm \
             zsh podman buildah distrobox docker docker-compose
         ;;
-    ubuntu)
+    ubuntu | raspberry)
         sudo apt-get update
         sudo apt-get install -y \
             git curl wget unzip tar build-essential gawk jq \
             fzf bat fd-find ripgrep htop tmux tree stow \
             python3 python3-pip python3-venv pipx \
             zsh podman docker.io docker-compose
+
+        # git-delta is in newer apt repos (Debian 12+, Ubuntu 22.04+); best-effort
+        sudo apt-get install -y git-delta || warn "git-delta unavailable via apt — install via cargo or GitHub release"
 
         # Ubuntu aliases for modern tools
         [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
@@ -168,7 +184,7 @@ install_dev_tools() {
     # sops
     if ! command -v sops &>/dev/null; then
         local sops_version="v3.8.1"
-        local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux-amd64"
+        local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux.${ARCH}"
         sudo curl -Lo /usr/local/bin/sops "$sops_url"
         sudo chmod +x /usr/local/bin/sops
         ok "sops installed"
@@ -178,8 +194,12 @@ install_dev_tools() {
 
     # zed
     if ! command -v zed &>/dev/null && [ ! -f "$HOME/.local/bin/zed" ]; then
-        curl -f https://zed.dev/install.sh | sh
-        ok "zed installed"
+        if [[ "$ARCH" != "amd64" ]]; then
+            warn "Zed has no Linux ${ARCH} build — skipping"
+        else
+            curl -f https://zed.dev/install.sh | sh
+            ok "zed installed"
+        fi
     else
         ok "zed already installed"
     fi

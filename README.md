@@ -2,7 +2,7 @@
 
 A clean, modern **Zsh** setup with **Oh My Zsh** and **Starship** prompt, tailored for developers.
 
-Supports **Linux (openSUSE Tumbleweed / Ubuntu)** and **WSL**.
+Supports **Linux (openSUSE Tumbleweed / Ubuntu / Raspberry Pi OS)** and **WSL**.
 
 ## Features
 
@@ -18,6 +18,8 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu)** and **WSL**.
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
 - **Development Managers:** `nvm` (Node), `pyenv` (Python), `uv` (Python), `rustup` (Rust)
 - **Containers:** Podman, Buildah, Distrobox, Docker (on Native Linux)
+
+> Note: Zed editor is x86_64-only on Linux and is automatically skipped on ARM (Raspberry Pi).
 
 ## Installation
 
@@ -43,6 +45,14 @@ cd ~/Projects/dotfiles
 #### Native Linux (openSUSE / Ubuntu)
 
 Installs the full suite of CLI tools, dev environments, and container engines (Podman & Docker).
+
+```bash
+bash install.sh
+```
+
+#### Raspberry Pi OS (64-bit)
+
+Same installer as native Linux — Pi is detected automatically via `/proc/device-tree/model`. Architecture-specific downloads (e.g. SOPS) and ARM-incompatible tools (Zed) are handled.
 
 ```bash
 bash install.sh
