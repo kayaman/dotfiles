@@ -1,0 +1,28 @@
+# Run on every commit. Install once per clone:
+#   pip install pre-commit && pre-commit install
+# To run against the whole repo without committing:
+#   pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        # zsh files are not POSIX/bash; skip them. shellcheck has incomplete zsh support.
+        exclude: ^stow/zsh/
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.10.0-2
+    hooks:
+      - id: shfmt
+        args: ["-i", "4", "-ci", "-w"]
+        exclude: ^stow/zsh/
