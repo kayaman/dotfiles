@@ -1036,10 +1036,8 @@ function tree() {
         fi
 }
 
-alias ping='ping -c 5'
-
 function nmap_() {
-        nmap -sS -O -p- 192.168.15.0/24
+        nmap -sS -O -p- "${1:-192.168.15.0/24}"
 }
 
 function dcsr() {
