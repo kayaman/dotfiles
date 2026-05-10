@@ -17,7 +17,7 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)** and
   - [fd](https://github.com/sharkdp/fd) (better `find`)
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
 - **Development Managers:** `nvm` (Node), `pyenv` (Python), `uv` (Python), `rustup` (Rust)
-- **Containers:** Podman, Buildah, Distrobox, Docker (on Native Linux)
+- **Containers:** Podman + Buildah + Distrobox on all Linux targets; Docker only on openSUSE/Ubuntu (Fedora uses Podman)
 
 > Note: Zed editor is x86_64-only on Linux and is automatically skipped on ARM (Raspberry Pi).
 
@@ -83,7 +83,9 @@ dotfiles/
 │   ├── tree/                     # .treeglobal (global ignore patterns for tree)
 │   ├── kitty/                    # .config/kitty/kitty.conf
 │   ├── keyd/                     # .config/keyd/default.conf
-│   └── ghostty/                  # .config/ghostty/config
+│   ├── ghostty/                  # .config/ghostty/config
+│   ├── xcompose/                 # .XCompose (cedilla fix on US keyboard)
+│   └── cedilla/                  # .config/environment.d/cedilla.conf (GTK/Qt cedilla input module)
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
 ├── scripts/                      # Setup scripts
 └── README.md

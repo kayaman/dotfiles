@@ -4,4 +4,9 @@ bash/.bash_local
 # OS
 .DS_Store
 Thumbs.db
+
+# User secrets / machine-specific config
 dotfiles.toml
+dotfiles.sops.toml
+.env
+.env.sh
