@@ -90,8 +90,6 @@ if [[ -d "$DOTFILES/snippets" ]]; then
     done
 fi
 
-export PATH=$PATH:/home/kayaman/.local/bin
-
 # ── Starship prompt (Removed) ─────────────────────────────────
 export GPG_TTY=$(tty)
 
