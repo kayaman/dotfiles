@@ -181,14 +181,6 @@ install_dev_tools() {
         ok "rustup already installed"
     fi
 
-    # antigravity-usage
-    # if ! command -v antigravity-usage &>/dev/null; then
-    #     sudo npm install -g antigravity-usage
-    #     ok "antigravity-usage installed"
-    # else
-    #     ok "antigravity-usage already installed"
-    # fi
-
     # sops
     if ! command -v sops &>/dev/null; then
         local sops_version="v3.8.1"
