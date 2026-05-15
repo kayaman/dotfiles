@@ -85,7 +85,9 @@ dotfiles/
 │   ├── keyd/                     # .config/keyd/default.conf
 │   ├── ghostty/                  # .config/ghostty/config
 │   ├── xcompose/                 # .XCompose (cedilla fix on US keyboard)
-│   └── cedilla/                  # .config/environment.d/cedilla.conf (GTK/Qt cedilla input module)
+│   ├── cedilla/                  # .config/environment.d/cedilla.conf (GTK/Qt cedilla input module)
+│   ├── tmux/                     # .config/tmux/tmux.conf (prefix: C-a)
+│   └── vim/                      # .vimrc
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
 ├── scripts/                      # Setup scripts
 └── README.md
