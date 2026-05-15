@@ -1,0 +1,32 @@
+name: shell-lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shfmt:
+    name: shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mfinelli/setup-shfmt@v3
+      - name: shfmt -d
+        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f .)
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -e SC1091
+        with:
+          severity: warning
+          additional_files: stow/git/.githooks/pre-commit

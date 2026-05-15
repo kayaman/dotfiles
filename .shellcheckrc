@@ -1,0 +1,11 @@
+# shellcheck configuration
+# Applies repo-wide. Per-file disables go in `# shellcheck disable=...` comments.
+
+# Default to bash so scripts using bashisms aren't false-flagged.
+shell=bash
+
+# Follow `source`/`.` directives so external file definitions aren't unknown.
+external-sources=true
+
+# SC1091: don't error on files we can't follow (e.g. /etc, stowed targets).
+disable=SC1091
