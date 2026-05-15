@@ -24,21 +24,21 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 
 # ── Distro detection ─────────────────────────────────────────
 detect_distro() {
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        case "$ID" in
-        opensuse-tumbleweed | opensuse*) echo "opensuse" ;;
-        ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
-        fedora | rhel | rocky | almalinux) echo "fedora" ;;
-        *)
-            warn "Unsupported distro: $ID — attempting Ubuntu-style install"
-            echo "ubuntu"
-            ;;
-        esac
-    else
-        err "Cannot detect distro"
-        exit 1
-    fi
+  if [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    case "$ID" in
+      opensuse-tumbleweed | opensuse*) echo "opensuse" ;;
+      ubuntu | pop | linuxmint | debian) echo "ubuntu" ;;
+      fedora | rhel | rocky | almalinux) echo "fedora" ;;
+      *)
+        warn "Unsupported distro: $ID — attempting Ubuntu-style install"
+        echo "ubuntu"
+        ;;
+    esac
+  else
+    err "Cannot detect distro"
+    exit 1
+  fi
 }
 
 DISTRO="$(detect_distro)"
@@ -46,229 +46,229 @@ info "Detected distro: $DISTRO (WSL)"
 
 # ── 1. System packages ───────────────────────────────────────
 install_system_packages() {
-    section "System Packages (WSL)"
+  section "System Packages (WSL)"
 
-    case "$DISTRO" in
+  case "$DISTRO" in
     opensuse)
-        sudo zypper refresh
-        sudo zypper install -y --no-recommends \
-            git curl wget unzip tar make gcc gcc-c++ gawk jq \
-            fzf bat eza fd ripgrep git-delta htop tmux tree stow \
-            python3 python3-pip python3-pipx \
-            zsh
-        ;;
+      sudo zypper refresh
+      sudo zypper install -y --no-recommends \
+        git curl wget unzip tar make gcc gcc-c++ gawk jq \
+        fzf bat eza fd ripgrep git-delta htop tmux tree stow \
+        python3 python3-pip python3-pipx \
+        zsh
+      ;;
     ubuntu)
-        sudo apt-get update
-        sudo apt-get install -y \
-            git curl wget unzip tar build-essential gawk jq \
-            fzf bat fd-find ripgrep htop tmux tree stow \
-            python3 python3-pip python3-venv pipx \
-            zsh
+      sudo apt-get update
+      sudo apt-get install -y \
+        git curl wget unzip tar build-essential gawk jq \
+        fzf bat fd-find ripgrep htop tmux tree stow \
+        python3 python3-pip python3-venv pipx \
+        zsh
 
-        # Ubuntu aliases for modern tools
-        [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-        [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
+      # Ubuntu aliases for modern tools
+      [[ ! -L /usr/local/bin/bat ]] && [[ -x /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
+      [[ ! -L /usr/local/bin/fd ]] && [[ -x /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
-        # Install eza
-        if ! command -v eza &>/dev/null; then
-            sudo mkdir -p /etc/apt/keyrings
-            if sudo apt-get install -y gnupg >/dev/null &&
-                wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
-                echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
-                sudo apt-get update && sudo apt-get install -y eza || {
-                    warn "eza install failed"
-                    sudo rm -f /etc/apt/sources.list.d/gierens.list
-                }
-            else
-                warn "eza install failed: could not import GPG key"
-                sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-            fi
+      # Install eza
+      if ! command -v eza &> /dev/null; then
+        sudo mkdir -p /etc/apt/keyrings
+        if sudo apt-get install -y gnupg > /dev/null \
+          && wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg; then
+          echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
+          sudo apt-get update && sudo apt-get install -y eza || {
+            warn "eza install failed"
+            sudo rm -f /etc/apt/sources.list.d/gierens.list
+          }
+        else
+          warn "eza install failed: could not import GPG key"
+          sudo rm -f /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
         fi
-        ;;
+      fi
+      ;;
     fedora)
-        sudo dnf install -y --setopt=install_weak_deps=False \
-            git curl wget unzip tar make gcc gcc-c++ gawk jq \
-            fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt \
-            python3 python3-pip pipx \
-            zsh
-        ;;
-    esac
+      sudo dnf install -y --setopt=install_weak_deps=False \
+        git curl wget unzip tar make gcc gcc-c++ gawk jq \
+        fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt \
+        python3 python3-pip pipx \
+        zsh
+      ;;
+  esac
 
-    ok "System packages installed"
+  ok "System packages installed"
 }
 
 # ── 2. Oh My Zsh ─────────────────────────────────────────────
 install_oh_my_zsh() {
-    section "Oh My Zsh"
-    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-        RUNZSH=no KEEP_ZSHRC=yes bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
-        ok "Oh My Zsh installed"
-    else
-        ok "Oh My Zsh already installed"
+  section "Oh My Zsh"
+  if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+    RUNZSH=no KEEP_ZSHRC=yes bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
+    ok "Oh My Zsh installed"
+  else
+    ok "Oh My Zsh already installed"
+  fi
+
+  # Plugins
+  local ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+  local plugins=(
+    "zsh-autosuggestions:https://github.com/zsh-users/zsh-autosuggestions.git"
+    "zsh-syntax-highlighting:https://github.com/zsh-users/zsh-syntax-highlighting.git"
+    "zsh-completions:https://github.com/zsh-users/zsh-completions.git"
+  )
+
+  for plug in "${plugins[@]}"; do
+    local name="${plug%%:*}" repo="${plug#*:}"
+    local dest="$ZSH_CUSTOM/plugins/$name"
+    if [[ ! -d "$dest" ]]; then
+      git clone --depth=1 "$repo" "$dest"
+      ok "$name plugin installed"
     fi
-
-    # Plugins
-    local ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
-    local plugins=(
-        "zsh-autosuggestions:https://github.com/zsh-users/zsh-autosuggestions.git"
-        "zsh-syntax-highlighting:https://github.com/zsh-users/zsh-syntax-highlighting.git"
-        "zsh-completions:https://github.com/zsh-users/zsh-completions.git"
-    )
-
-    for plug in "${plugins[@]}"; do
-        local name="${plug%%:*}" repo="${plug#*:}"
-        local dest="$ZSH_CUSTOM/plugins/$name"
-        if [[ ! -d "$dest" ]]; then
-            git clone --depth=1 "$repo" "$dest"
-            ok "$name plugin installed"
-        fi
-    done
+  done
 }
 
 # ── 3. Dev Tools & Managers ──────────────────────────────────
 install_dev_tools() {
-    section "Development Tools"
+  section "Development Tools"
 
-    # nvm
-    if [[ ! -d "$HOME/.nvm" ]]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
-        ok "nvm installed"
-    else
-        ok "nvm already installed"
-    fi
+  # nvm
+  if [[ ! -d "$HOME/.nvm" ]]; then
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+    ok "nvm installed"
+  else
+    ok "nvm already installed"
+  fi
 
-    # uv
-    if ! command -v uv &>/dev/null && [ ! -f "$HOME/.local/bin/uv" ] && [ ! -f "$HOME/.cargo/bin/uv" ]; then
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        ok "uv installed"
-    else
-        ok "uv already installed"
-    fi
+  # uv
+  if ! command -v uv &> /dev/null && [ ! -f "$HOME/.local/bin/uv" ] && [ ! -f "$HOME/.cargo/bin/uv" ]; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ok "uv installed"
+  else
+    ok "uv already installed"
+  fi
 
-    # pyenv
-    if [[ ! -d "$HOME/.pyenv" ]]; then
-        curl -fsSL https://pyenv.run | bash
-        ok "pyenv installed"
-    else
-        ok "pyenv already installed"
-    fi
+  # pyenv
+  if [[ ! -d "$HOME/.pyenv" ]]; then
+    curl -fsSL https://pyenv.run | bash
+    ok "pyenv installed"
+  else
+    ok "pyenv already installed"
+  fi
 
-    # rustup
-    if ! command -v rustup &>/dev/null && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-        ok "rustup installed"
-    else
-        ok "rustup already installed"
-    fi
+  # rustup
+  if ! command -v rustup &> /dev/null && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    ok "rustup installed"
+  else
+    ok "rustup already installed"
+  fi
 
-    # sops
-    if ! command -v sops &>/dev/null; then
-        local sops_version="v3.8.1"
-        local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux-amd64"
-        sudo curl -Lo /usr/local/bin/sops "$sops_url"
-        sudo chmod +x /usr/local/bin/sops
-        ok "sops installed"
-    else
-        ok "sops already installed"
-    fi
+  # sops
+  if ! command -v sops &> /dev/null; then
+    local sops_version="v3.8.1"
+    local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux-amd64"
+    sudo curl -Lo /usr/local/bin/sops "$sops_url"
+    sudo chmod +x /usr/local/bin/sops
+    ok "sops installed"
+  else
+    ok "sops already installed"
+  fi
 
-    # zed
-    if ! command -v zed &>/dev/null && [ ! -f "$HOME/.local/bin/zed" ]; then
-        curl -f https://zed.dev/install.sh | sh
-        ok "zed installed"
-    else
-        ok "zed already installed"
-    fi
+  # zed
+  if ! command -v zed &> /dev/null && [ ! -f "$HOME/.local/bin/zed" ]; then
+    curl -f https://zed.dev/install.sh | sh
+    ok "zed installed"
+  else
+    ok "zed already installed"
+  fi
 
-    # starship
-    if ! command -v starship &>/dev/null && [ ! -f "/usr/local/bin/starship" ]; then
-        curl -sS https://starship.rs/install.sh | sh -s -- -y
-        ok "starship installed"
-    else
-        ok "starship already installed"
-    fi
+  # starship
+  if ! command -v starship &> /dev/null && [ ! -f "/usr/local/bin/starship" ]; then
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    ok "starship installed"
+  else
+    ok "starship already installed"
+  fi
 }
 
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
 symlink_dotfiles() {
-    section "Symlinking Dotfiles with Stow"
+  section "Symlinking Dotfiles with Stow"
 
-    if ! command -v stow &>/dev/null; then
-        err "stow is not installed — cannot symlink dotfiles"
-        case "$DISTRO" in
-        opensuse) err "Install it manually: sudo zypper install stow" ;;
-        ubuntu) err "Install it manually: sudo apt-get install stow" ;;
-        fedora) err "Install it manually: sudo dnf install stow" ;;
-        esac
-        return 1
+  if ! command -v stow &> /dev/null; then
+    err "stow is not installed — cannot symlink dotfiles"
+    case "$DISTRO" in
+      opensuse) err "Install it manually: sudo zypper install stow" ;;
+      ubuntu) err "Install it manually: sudo apt-get install stow" ;;
+      fedora) err "Install it manually: sudo dnf install stow" ;;
+    esac
+    return 1
+  fi
+
+  cd "$DOTFILES/stow" || {
+    warn "stow directory not found"
+    return
+  }
+
+  for pkg in *; do
+    [[ -d "$pkg" ]] || continue
+
+    # Remove broken symlinks that would block this package
+    while IFS= read -r src; do
+      dest="$HOME/${src#$pkg/}"
+      if [[ -L "$dest" && ! -e "$dest" ]]; then
+        warn "Removing broken symlink: $dest"
+        rm "$dest"
+      fi
+    done < <(find "$pkg" ! -type d)
+
+    # Dry-run first — skip packages that would conflict with existing files
+    if ! stow -n -R -t "$HOME" "$pkg" 2> /dev/null; then
+      warn "Skipping $pkg — conflicts with existing files (resolve manually)"
+      continue
     fi
 
-    cd "$DOTFILES/stow" || {
-        warn "stow directory not found"
-        return
-    }
+    stow -R -t "$HOME" "$pkg"
+    ok "Stowed $pkg"
+  done
 
-    for pkg in *; do
-        [[ -d "$pkg" ]] || continue
-
-        # Remove broken symlinks that would block this package
-        while IFS= read -r src; do
-            dest="$HOME/${src#$pkg/}"
-            if [[ -L "$dest" && ! -e "$dest" ]]; then
-                warn "Removing broken symlink: $dest"
-                rm "$dest"
-            fi
-        done < <(find "$pkg" ! -type d)
-
-        # Dry-run first — skip packages that would conflict with existing files
-        if ! stow -n -R -t "$HOME" "$pkg" 2>/dev/null; then
-            warn "Skipping $pkg — conflicts with existing files (resolve manually)"
-            continue
-        fi
-
-        stow -R -t "$HOME" "$pkg"
-        ok "Stowed $pkg"
-    done
-
-    cd "$DOTFILES"
+  cd "$DOTFILES"
 }
 
 # ── 5. Default Shell ─────────────────────────────────────────
 set_default_shell() {
-    section "Default Shell"
-    local zsh_path
-    zsh_path="$(command -v zsh 2>/dev/null)" || {
-        warn "zsh not found"
-        return
-    }
+  section "Default Shell"
+  local zsh_path
+  zsh_path="$(command -v zsh 2> /dev/null)" || {
+    warn "zsh not found"
+    return
+  }
 
-    if [[ "$SHELL" != "$zsh_path" ]]; then
-        if ! grep -qxF "$zsh_path" /etc/shells; then
-            echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
-        fi
-        chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
-        ok "Default shell set to zsh"
-    else
-        ok "Default shell is already zsh"
+  if [[ "$SHELL" != "$zsh_path" ]]; then
+    if ! grep -qxF "$zsh_path" /etc/shells; then
+      echo "$zsh_path" | sudo tee -a /etc/shells > /dev/null
     fi
+    chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
+    ok "Default shell set to zsh"
+  else
+    ok "Default shell is already zsh"
+  fi
 }
 
 main() {
-    echo ""
-    echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║     dotfiles installer - WSL Edition     ║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
-    echo ""
+  echo ""
+  echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}║     dotfiles installer - WSL Edition     ║${NC}"
+  echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
+  echo ""
 
-    install_system_packages
-    install_oh_my_zsh
-    install_dev_tools
-    symlink_dotfiles
-    set_default_shell
+  install_system_packages
+  install_oh_my_zsh
+  install_dev_tools
+  symlink_dotfiles
+  set_default_shell
 
-    echo ""
-    ok "Installation complete! Restart your terminal or run: exec zsh"
-    echo ""
+  echo ""
+  ok "Installation complete! Restart your terminal or run: exec zsh"
+  echo ""
 }
 
 main "$@"
