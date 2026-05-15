@@ -1100,3 +1100,23 @@ function ghk() {
 function get_ai_gtw_pass() {
     aws ssm get-parameter --name /ai-gateway/admin_token --with-decryption --query Parameter.Value --output text
 }
+
+function exec-logs() {
+    journalctl -u executor@kayaman -f
+}
+
+function lint() {
+    podman run -v "$(pwd):/code" ghcr.io/biomejs/biome lint
+}
+
+function lint-fix() {
+    podman run -v "$(pwd):/code" ghcr.io/biomejs/biome lint --write
+}
+
+function format-dry-run() {
+    podman run -v "$(pwd):/code" ghcr.io/biomejs/biome format
+}
+
+function format() {
+    podman run -v "$(pwd):/code" ghcr.io/biomejs/biome format --write
+}

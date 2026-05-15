@@ -91,7 +91,7 @@ if [[ -d "$DOTFILES/snippets" ]]; then
 fi
 
 # ── Starship prompt (Removed) ─────────────────────────────────
-export GPG_TTY=$(tty)
+[[ -t 0 ]] && export GPG_TTY=$(tty)
 
 # ── NVM (Lazy Load Optimization) ──────────────────────────────
 log_step "NVM setup (lazy)"
@@ -125,3 +125,8 @@ if [[ -n "$ZSH_PROF" ]]; then
     unalias source 2>/dev/null
     unalias . 2>/dev/null
 fi
+
+# ── Bun ───────────────────────────────────────────────────────
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
