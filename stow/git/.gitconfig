@@ -67,9 +67,10 @@
 [commit]
 	gpgsign = true
 [tag]
-	gpgsign = true
+	gpgSign = true
 [gpg]
 	program = gpg2
 [user]
 	name = Marco Antonio Gonzalez Junior
 	email = m@rco.sh
+	signingkey = FE2E453269254279
