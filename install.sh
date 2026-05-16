@@ -212,6 +212,32 @@ install_dev_tools() {
     ok "starship already installed"
   fi
 
+  # claude code
+  if ! command -v claude &> /dev/null && [ ! -f "$HOME/.local/bin/claude" ]; then
+    curl -fsSL https://claude.ai/install.sh | bash
+    ok "claude code installed"
+  else
+    ok "claude code already installed"
+  fi
+
+  # lefthook (pre-commit runner; not in distro repos)
+  if ! command -v lefthook &> /dev/null && [ ! -f "$HOME/.local/bin/lefthook" ]; then
+    local lefthook_version="v2.1.6"
+    local lefthook_arch
+    case "$ARCH" in
+      amd64) lefthook_arch="x86_64" ;;
+      arm64) lefthook_arch="aarch64" ;;
+      *) lefthook_arch="$ARCH" ;;
+    esac
+    mkdir -p "$HOME/.local/bin"
+    curl -fsSL -o "$HOME/.local/bin/lefthook" \
+      "https://github.com/evilmartians/lefthook/releases/download/${lefthook_version}/lefthook_${lefthook_version#v}_Linux_${lefthook_arch}"
+    chmod +x "$HOME/.local/bin/lefthook"
+    ok "lefthook installed"
+  else
+    ok "lefthook already installed"
+  fi
+
   # vscode
   if ! command -v code &> /dev/null && [ ! -f "/usr/local/bin/code" ]; then
     case "$DISTRO" in
@@ -341,6 +367,58 @@ install_alacritty() {
   ok "alacritty built from source and installed to ~/.local"
 }
 
+# ── 3c. Google Chrome ────────────────────────────────────────
+install_chrome() {
+  section "Google Chrome"
+
+  if command -v google-chrome-stable &> /dev/null; then
+    ok "google-chrome-stable already installed"
+    return
+  fi
+
+  if [[ "$ARCH" != "amd64" ]]; then
+    warn "Google Chrome has no Linux ${ARCH} build — skipping"
+    return
+  fi
+
+  case "$DISTRO" in
+    opensuse)
+      sudo rpm --import https://dl.google.com/linux/linux_signing_key.pub
+      sudo zypper --non-interactive addrepo --refresh --gpgcheck \
+        https://dl.google.com/linux/chrome/rpm/stable/x86_64 google-chrome || true
+      sudo zypper --gpg-auto-import-keys refresh
+      sudo zypper install -y google-chrome-stable
+      ;;
+    ubuntu | raspberry)
+      sudo install -d -m 0755 /usr/share/keyrings
+      curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+        | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+        | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+      sudo apt-get update
+      sudo apt-get install -y google-chrome-stable
+      ;;
+    fedora)
+      sudo rpm --import https://dl.google.com/linux/linux_signing_key.pub
+      sudo tee /etc/yum.repos.d/google-chrome.repo > /dev/null << 'EOF'
+[google-chrome]
+name=google-chrome
+baseurl=https://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.google.com/linux/linux_signing_key.pub
+EOF
+      sudo dnf install -y google-chrome-stable
+      ;;
+    *)
+      warn "Unknown distro '$DISTRO'; skipping Google Chrome installation"
+      return
+      ;;
+  esac
+
+  ok "google-chrome-stable installed"
+}
+
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
 symlink_dotfiles() {
   section "Symlinking Dotfiles with Stow"
@@ -419,10 +497,14 @@ main() {
   echo ""
 
   install_system_packages
+  # Stow before Oh My Zsh: OMZ's installer writes a template ~/.zshrc when none
+  # exists, which makes stow abort the entire zsh package on conflict. Stowing
+  # first means OMZ (run with KEEP_ZSHRC=yes) sees the symlink and leaves it.
+  symlink_dotfiles
   install_oh_my_zsh
   install_dev_tools
   install_alacritty
-  symlink_dotfiles
+  install_chrome
   fix_cedilla
   set_default_shell
 

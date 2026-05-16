@@ -59,6 +59,18 @@ log_step "Loading Oh My Zsh"
 source "$ZSH/oh-my-zsh.sh"
 log_step "Oh My Zsh loaded"
 
+# ── zsh-syntax-highlighting: explicit styles ──────────────────
+# Defaults set only [arg0]=fg=green (no bold), which is invisible on many themes.
+typeset -gA ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[arg0]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_command]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_alias]='fg=cyan,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_builtin]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_function]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_precommand]='fg=green,bold,underline'
+ZSH_HIGHLIGHT_STYLES[arg0_hashed-command]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=red,bold'
+
 # ── Custom config ─────────────────────────────────────────────
 if [[ -z "${DOTFILES:-}" ]]; then
     # ${(%):-%N} expands to the path of the currently sourced file in zsh
