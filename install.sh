@@ -65,7 +65,7 @@ install_system_packages() {
       sudo zypper refresh
       sudo zypper install -y --no-recommends \
         git curl wget unzip tar make gcc gcc-c++ gawk jq \
-        fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt \
+        fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
         python3 python3-pip python3-pipx nodejs npm \
         zsh podman buildah distrobox docker docker-compose
       ;;
@@ -73,7 +73,7 @@ install_system_packages() {
       sudo apt-get update
       sudo apt-get install -y \
         git curl wget unzip tar build-essential gawk jq \
-        fzf bat fd-find ripgrep htop tmux tree stow \
+        fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt \
         python3 python3-pip python3-venv pipx \
         zsh podman docker.io docker-compose
 
@@ -109,7 +109,7 @@ install_system_packages() {
     fedora)
       sudo dnf install -y --setopt=install_weak_deps=False \
         git curl wget unzip tar make gcc gcc-c++ gawk jq \
-        fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt \
+        fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
         python3 python3-pip pipx nodejs npm \
         zsh podman buildah distrobox
       ;;
@@ -248,6 +248,99 @@ install_dev_tools() {
   fi
 }
 
+# ── 3b. Alacritty (distro package, fall back to source build) ──────
+install_alacritty() {
+  section "Alacritty"
+
+  if command -v alacritty &> /dev/null; then
+    ok "alacritty already installed ($(alacritty --version 2>&1 | head -1))"
+    return
+  fi
+
+  # Try distro package first — these are built with Wayland + X11 support.
+  local pkg_ok=0
+  case "$DISTRO" in
+    opensuse)
+      sudo zypper install -y --no-recommends alacritty && pkg_ok=1 || warn "zypper could not install alacritty"
+      ;;
+    ubuntu | raspberry)
+      sudo apt-get install -y alacritty && pkg_ok=1 || warn "apt could not install alacritty (older Ubuntu/Debian may need a PPA)"
+      ;;
+    fedora)
+      sudo dnf install -y alacritty && pkg_ok=1 || warn "dnf could not install alacritty"
+      ;;
+  esac
+
+  if [[ "$pkg_ok" == "1" ]] && command -v alacritty &> /dev/null; then
+    ok "alacritty installed via distro package"
+    return
+  fi
+
+  # Source build fallback — needs Rust (provided by install_dev_tools) + native deps.
+  warn "Falling back to source build (Wayland + X11)"
+
+  case "$DISTRO" in
+    opensuse)
+      sudo zypper install -y --no-recommends \
+        cmake pkg-config freetype2-devel fontconfig-devel \
+        libxcb-devel libxkbcommon-devel wayland-devel python3 || {
+        err "Could not install alacritty build dependencies"
+        return 1
+      }
+      ;;
+    ubuntu | raspberry)
+      sudo apt-get install -y \
+        cmake pkg-config libfreetype6-dev libfontconfig1-dev \
+        libxcb-xfixes0-dev libxkbcommon-dev libwayland-dev python3 || {
+        err "Could not install alacritty build dependencies"
+        return 1
+      }
+      ;;
+    fedora)
+      sudo dnf install -y \
+        cmake pkg-config freetype-devel fontconfig-devel \
+        libxcb-devel libxkbcommon-devel wayland-devel python3 || {
+        err "Could not install alacritty build dependencies"
+        return 1
+      }
+      ;;
+  esac
+
+  # Source rustup env for this shell so `cargo` is on PATH right after install_dev_tools.
+  # shellcheck disable=SC1091
+  [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+
+  if ! command -v cargo &> /dev/null; then
+    err "cargo not found — rustup may have failed; cannot build alacritty from source"
+    return 1
+  fi
+
+  local src_dir="$HOME/.cache/dotfiles/alacritty-src"
+  mkdir -p "$(dirname "$src_dir")"
+  if [[ -d "$src_dir/.git" ]]; then
+    git -C "$src_dir" fetch --depth=1 origin master
+    git -C "$src_dir" reset --hard origin/master
+  else
+    git clone --depth=1 https://github.com/alacritty/alacritty.git "$src_dir"
+  fi
+
+  (cd "$src_dir" && cargo build --release --features=wayland,x11) || {
+    err "alacritty source build failed"
+    return 1
+  }
+
+  install -Dm755 "$src_dir/target/release/alacritty" "$HOME/.local/bin/alacritty"
+  install -Dm644 "$src_dir/extra/logo/alacritty-term.svg" \
+    "$HOME/.local/share/icons/hicolor/scalable/apps/Alacritty.svg"
+  install -Dm644 "$src_dir/extra/linux/Alacritty.desktop" \
+    "$HOME/.local/share/applications/Alacritty.desktop"
+
+  command -v update-desktop-database &> /dev/null \
+    && update-desktop-database "$HOME/.local/share/applications" &> /dev/null || true
+
+  ok "alacritty built from source and installed to ~/.local"
+}
+
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
 symlink_dotfiles() {
   section "Symlinking Dotfiles with Stow"
@@ -328,6 +421,7 @@ main() {
   install_system_packages
   install_oh_my_zsh
   install_dev_tools
+  install_alacritty
   symlink_dotfiles
   fix_cedilla
   set_default_shell

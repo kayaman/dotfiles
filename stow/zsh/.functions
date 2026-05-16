@@ -580,7 +580,10 @@ dot() {
                         else
                                 git add -A
                                 echo -e "$_info Committing: \"$msg\""
-                                git commit -m "$msg"
+                                git commit -m "$msg" || {
+                                        echo -e "$_err Commit failed (pre-commit hook?). Aborting." >&2
+                                        return 1
+                                }
                         fi
                         echo -e "$_info Pushing..."
                         git push && echo -e "$_ok Push complete."
@@ -594,7 +597,10 @@ dot() {
                         if [[ -n "$(git status --porcelain)" ]]; then
                                 echo -e "$_info Committing local changes..."
                                 git add -A
-                                git commit -m "$msg"
+                                git commit -m "$msg" || {
+                                        echo -e "$_err Commit failed (pre-commit hook?). Aborting." >&2
+                                        return 1
+                                }
                                 echo -e "$_ok Committed."
                         fi
                         echo -e "$_info Pulling (rebase)..."

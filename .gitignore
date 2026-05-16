@@ -10,3 +10,4 @@ dotfiles.toml
 dotfiles.sops.toml
 .env
 .env.sh
+.claude

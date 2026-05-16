@@ -91,7 +91,10 @@ if [[ -d "$DOTFILES/snippets" ]]; then
 fi
 
 # ── Starship prompt (Removed) ─────────────────────────────────
-[[ -t 0 ]] && export GPG_TTY=$(tty)
+if [[ -t 0 ]]; then
+    _gpg_tty=$(tty 2>/dev/null) && export GPG_TTY="$_gpg_tty"
+    unset _gpg_tty
+fi
 
 # ── NVM (Lazy Load Optimization) ──────────────────────────────
 log_step "NVM setup (lazy)"
