@@ -230,6 +230,55 @@ install_dev_tools() {
     ok "lefthook already installed"
   fi
 
+  # gh (GitHub CLI)
+  if ! command -v gh &> /dev/null; then
+    local gh_version="2.65.0"
+    local gh_arch
+    case "$ARCH" in
+      amd64) gh_arch="amd64" ;;
+      arm64) gh_arch="arm64" ;;
+      armhf) gh_arch="armv6" ;;
+      *) gh_arch="amd64" ;;
+    esac
+    local gh_tmp
+    gh_tmp="$(mktemp -d)"
+    if curl -fsSL "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_${gh_arch}.tar.gz" \
+      | tar xz -C "$gh_tmp" --strip-components=1; then
+      sudo install -m 755 "$gh_tmp/bin/gh" /usr/local/bin/gh
+      ok "gh ${gh_version} installed"
+    else
+      warn "gh download failed"
+    fi
+    rm -rf "$gh_tmp"
+  else
+    ok "gh already installed"
+  fi
+
+  # terraform
+  if ! command -v terraform &> /dev/null; then
+    local tf_version="1.10.5"
+    local tf_arch
+    case "$ARCH" in
+      amd64) tf_arch="amd64" ;;
+      arm64) tf_arch="arm64" ;;
+      armhf) tf_arch="arm" ;;
+      *) tf_arch="amd64" ;;
+    esac
+    local tf_tmp
+    tf_tmp="$(mktemp -d)"
+    if curl -fsSL -o "$tf_tmp/terraform.zip" \
+      "https://releases.hashicorp.com/terraform/${tf_version}/terraform_${tf_version}_linux_${tf_arch}.zip" \
+      && unzip -q "$tf_tmp/terraform.zip" -d "$tf_tmp"; then
+      sudo install -m 755 "$tf_tmp/terraform" /usr/local/bin/terraform
+      ok "terraform ${tf_version} installed"
+    else
+      warn "terraform download failed"
+    fi
+    rm -rf "$tf_tmp"
+  else
+    ok "terraform already installed"
+  fi
+
   # vscode
   if ! command -v code &> /dev/null && [ ! -f "/usr/local/bin/code" ]; then
     case "$DISTRO" in

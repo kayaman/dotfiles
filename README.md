@@ -17,6 +17,7 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
   - [fd](https://github.com/sharkdp/fd) (better `find`)
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
 - **Development Managers:** `nvm` (Node), `pyenv` (Python), `uv` (Python), `rustup` (Rust)
+- **DevOps:** [gh](https://cli.github.com) (GitHub CLI), [terraform](https://www.terraform.io)
 - **Containers:** Podman + Buildah + Distrobox on all Linux targets; Docker only on openSUSE/Ubuntu (Fedora uses Podman)
 
 > Note: Zed editor is x86_64-only on Linux and is automatically skipped on ARM (Raspberry Pi).
