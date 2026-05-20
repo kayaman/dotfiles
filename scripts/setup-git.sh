@@ -35,7 +35,7 @@ fi
 
 if [[ -n "${content:-}" ]]; then
   # Parse git section
-  eval $(echo "$content" | python3 -c "
+  eval "$(echo "$content" | python3 -c "
 import sys
 try:
     import tomllib
@@ -53,7 +53,7 @@ try:
             print(f'toml_{k}=\"{v}\"')
 except Exception:
     pass
-" 2> /dev/null)
+" 2> /dev/null)"
 fi
 
 # ── 1. User Name ──────────────────────────────────────────────

@@ -45,11 +45,11 @@ prompt_input() {
   while true; do
     if [[ "$secret" == "true" ]]; then
       printf "${BOLD}%s${NC} " "$prompt" >&2
-      read -rs "$var_name"
+      read -rs "${var_name?}"
       echo >&2
     else
       printf "${BOLD}%s${NC} " "$prompt" >&2
-      read -r "$var_name"
+      read -r "${var_name?}"
     fi
     [[ -n "${!var_name}" ]] && break
     warn "Input cannot be empty."
@@ -123,7 +123,6 @@ run_cleanup() {
     local field1 field10
     field1=$(echo "$line" | cut -d: -f1)
     field10=$(echo "$line" | cut -d: -f10)
-    field15=$(echo "$line" | cut -d: -f15)
 
     if [[ "$field1" == "sec" ]]; then
       is_stub=false
@@ -315,7 +314,6 @@ while IFS= read -r line; do
   field1=$(echo "$line" | cut -d: -f1)
   field2=$(echo "$line" | cut -d: -f2)
   field4=$(echo "$line" | cut -d: -f4)
-  field5=$(echo "$line" | cut -d: -f5)
   field10=$(echo "$line" | cut -d: -f10)
 
   if [[ "$field1" == "sec" ]]; then
@@ -326,7 +324,6 @@ while IFS= read -r line; do
     fi
     current_skip=false
     current_type="$field4"
-    current_keyid="$field5"
   elif [[ "$field1" == "fpr" && "${current_skip:-false}" == "false" ]]; then
     current_fpr="$field10"
   elif [[ "$field1" == "uid" && "${current_skip:-false}" == "false" ]]; then
@@ -547,7 +544,8 @@ if ! grep -q 'GPG_TTY' "$SHELL_RC" 2> /dev/null; then
   echo 'export GPG_TTY=$(tty)' >> "$SHELL_RC"
   success "Added GPG_TTY to ${SHELL_RC}."
 fi
-export GPG_TTY=$(tty)
+GPG_TTY=$(tty)
+export GPG_TTY
 
 gpgconf --kill gpg-agent 2> /dev/null || true
 gpg-connect-agent /bye 2> /dev/null || true

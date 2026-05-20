@@ -16,7 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: mfinelli/setup-shfmt@v3
       - name: shfmt -d
-        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f .)
+        # Exclude lefthook's auto-generated pre-commit hook; we don't own its style.
+        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f . | grep -v '^stow/git/\.githooks/')
 
   shellcheck:
     name: shellcheck
@@ -29,4 +30,3 @@ jobs:
           SHELLCHECK_OPTS: -e SC1091
         with:
           severity: warning
-          additional_files: stow/git/.githooks/pre-commit

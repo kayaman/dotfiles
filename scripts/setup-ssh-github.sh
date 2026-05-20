@@ -38,11 +38,11 @@ prompt_input() {
   while true; do
     if [[ "$secret" == "true" ]]; then
       printf "${BOLD}%s${NC} " "$prompt" >&2
-      read -rs "$var_name"
+      read -rs "${var_name?}"
       echo >&2
     else
       printf "${BOLD}%s${NC} " "$prompt" >&2
-      read -r "$var_name"
+      read -r "${var_name?}"
     fi
     [[ -n "${!var_name}" ]] && break
     warn "Input cannot be empty."

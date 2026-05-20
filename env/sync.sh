@@ -279,7 +279,7 @@ cmd_decrypt() {
 
   # Warn if ~/.env already exists
   if [[ -f "$ENV_FILE" ]]; then
-    warn "~/.env already exists"
+    warn "$ENV_FILE already exists"
     read -rp "Overwrite? (y/N): " confirm
     [[ "$confirm" =~ ^[Yy]$ ]] || {
       info "Aborted."
@@ -318,9 +318,9 @@ cmd_status() {
   if [[ -f "$ENV_FILE" ]]; then
     local count
     count="$(grep -c '=' "$ENV_FILE" 2> /dev/null || echo 0)"
-    ok "~/.env   : exists ($count variables)"
+    ok "$ENV_FILE : exists ($count variables)"
   else
-    warn "~/.env   : not found"
+    warn "$ENV_FILE : not found"
   fi
 
   echo ""

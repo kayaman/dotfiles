@@ -195,9 +195,6 @@ if [[ -z "$FINGERPRINT" ]]; then
   fatal "No secret key found for '${KEY_IDENTIFIER}'."
 fi
 
-KEY_ID_LONG=$($GPG --list-secret-keys --keyid-format long --with-colons "$KEY_IDENTIFIER" 2> /dev/null \
-  | awk -F: '/^sec:/ { split($5, a, ""); print $5; exit }')
-
 # Show what we found
 echo
 info "Selected key:"
@@ -414,7 +411,7 @@ fi
 
 echo
 info "Files in backup directory:"
-ls -lh "$BACKUP_DIR"/ | grep -v '^total'
+ls -lh "$BACKUP_DIR"/ | tail -n +2
 echo
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -507,12 +504,12 @@ fi
 # Quick functional test — can we still sign?
 echo
 info "Testing subkey signing capability..."
-TEST_SIG=$(echo "test" | $GPG --sign --armor --local-user "$FINGERPRINT" 2> /dev/null) && {
+if echo "test" | $GPG --sign --armor --local-user "$FINGERPRINT" > /dev/null 2>&1; then
   success "Signing with subkey works — Git commit signing will continue to work."
-} || {
+else
   warn "Signing test failed. This might be a pinentry issue in the current terminal."
   warn "Try manually: echo 'test' | ${GPG} --sign --armor --local-user ${FINGERPRINT}"
-}
+fi
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Summary

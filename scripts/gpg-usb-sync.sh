@@ -384,12 +384,17 @@ cmd_restore() {
 
   local workdir
   workdir=$(mktemp -d -t gpg-usb-sync.XXXXXX)
-  trap 'rm -rf "$workdir"' EXIT
+  # Expand $workdir at trap-definition time, not on EXIT — $workdir is `local`
+  # and would be unbound when the trap fires after this function returns
+  # (set -u then aborts the cleanup with "workdir: unbound variable").
+  # shellcheck disable=SC2064
+  trap "rm -rf '$workdir'" EXIT
 
   info "Decrypting tarball (you will be prompted for the passphrase)..."
   $GPG --decrypt "$tarball" 2> /dev/null | tar xzf - -C "$workdir" \
     || die "Failed to decrypt or extract tarball."
-  local extracted_home="$workdir/$(basename "$GNUPG_HOME")"
+  local extracted_home
+  extracted_home="$workdir/$(basename "$GNUPG_HOME")"
   [[ -d "$extracted_home" ]] || die "Extracted tarball missing expected $(basename "$GNUPG_HOME") dir."
   ok "Tarball extracted to: $extracted_home"
 
@@ -403,7 +408,8 @@ cmd_restore() {
   elif ((replace)); then
     warn "Existing $GNUPG_HOME will be replaced."
     confirm_or_die "Move existing $GNUPG_HOME aside and replace it?"
-    local backup_path="${GNUPG_HOME}.bak-$(date +%Y%m%d-%H%M%S)"
+    local backup_path
+    backup_path="${GNUPG_HOME}.bak-$(date +%Y%m%d-%H%M%S)"
     mv "$GNUPG_HOME" "$backup_path"
     ok "Previous keyring archived: $backup_path"
     mv "$extracted_home" "$GNUPG_HOME"
@@ -422,7 +428,8 @@ cmd_restore() {
       chmod 700 "$GNUPG_HOME/openpgp-revocs.d"
       for rev in "$snap/revocs/"*.rev; do
         [[ -f "$rev" ]] || continue
-        local target="$GNUPG_HOME/openpgp-revocs.d/$(basename "$rev")"
+        local target
+        target="$GNUPG_HOME/openpgp-revocs.d/$(basename "$rev")"
         if [[ ! -e "$target" ]]; then
           cp "$rev" "$target"
           chmod 600 "$target"

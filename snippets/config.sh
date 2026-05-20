@@ -14,7 +14,7 @@ else
 fi
 
 # Use python to safely parse TOML and export [secrets] as env vars
-eval $(echo "$content" | python3 -c "
+eval "$(echo "$content" | python3 -c "
 import sys
 
 def load_config(text):
@@ -38,4 +38,4 @@ if 'secrets' in data and isinstance(data['secrets'], dict):
     for k, v in data['secrets'].items():
         if isinstance(v, (str, int, float, bool)):
             print(f'export {k}=\"{v}\"')
-" 2> /dev/null)
+" 2> /dev/null)"
