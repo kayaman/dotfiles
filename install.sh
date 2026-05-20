@@ -420,6 +420,33 @@ EOF
 }
 
 # ── 4. Symlink Dotfiles ──────────────────────────────────────
+# Move any pre-existing file/dir/foreign-symlink under $pkg into $BACKUP_DIR,
+# preserving its relative path. Skips destinations that already resolve to the
+# expected target in this repo, so re-runs don't churn.
+backup_conflicts() {
+  local pkg="$1" src rel dest expected resolved expected_resolved
+  while IFS= read -r src; do
+    rel="${src#"$pkg"/}"
+    dest="$HOME/$rel"
+    expected="$DOTFILES/stow/$pkg/$rel"
+
+    [[ -e "$dest" || -L "$dest" ]] || continue
+
+    # readlink -f resolves through every symlinked ancestor, so this correctly
+    # skips both leaf-symlinks AND files reached via a folded parent symlink
+    # (stow likes to fold ~/.config/<pkg> into one dir-level symlink).
+    resolved="$(readlink -f "$dest" 2> /dev/null || true)"
+    expected_resolved="$(readlink -f "$expected" 2> /dev/null || true)"
+    if [[ -n "$resolved" && "$resolved" == "$expected_resolved" ]]; then
+      continue
+    fi
+
+    mkdir -p "$BACKUP_DIR/$(dirname "$rel")"
+    mv "$dest" "$BACKUP_DIR/$rel"
+    warn "Backed up $dest -> $BACKUP_DIR/$rel"
+  done < <(find "$pkg" ! -type d)
+}
+
 symlink_dotfiles() {
   section "Symlinking Dotfiles with Stow"
 
@@ -434,27 +461,37 @@ symlink_dotfiles() {
     return
   }
 
+  # Lazily created on first conflict — re-runs that need no backup leave no trace.
+  BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y-%m-%d-%H%M%S)"
+
   for pkg in *; do
     [[ -d "$pkg" ]] || continue
 
     # Remove broken symlinks that would block this package
     while IFS= read -r src; do
-      dest="$HOME/${src#$pkg/}"
+      dest="$HOME/${src#"$pkg"/}"
       if [[ -L "$dest" && ! -e "$dest" ]]; then
         warn "Removing broken symlink: $dest"
         rm "$dest"
       fi
     done < <(find "$pkg" ! -type d)
 
-    # Dry-run first — skip packages that would conflict with existing files
+    # Back up anything that would conflict so stow can take ownership cleanly
+    backup_conflicts "$pkg"
+
+    # Dry-run as a safety net — after backup this should always succeed.
     if ! stow -n -R -t "$HOME" "$pkg" 2> /dev/null; then
-      warn "Skipping $pkg — conflicts with existing files (resolve manually)"
+      err "Unexpected stow conflict in $pkg after backup — inspect manually"
       continue
     fi
 
     stow -R -t "$HOME" "$pkg"
     ok "Stowed $pkg"
   done
+
+  if [[ -d "$BACKUP_DIR" ]]; then
+    info "Pre-existing files backed up under: $BACKUP_DIR"
+  fi
 
   cd "$DOTFILES"
 }
