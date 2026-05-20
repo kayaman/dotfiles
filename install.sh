@@ -279,6 +279,31 @@ install_dev_tools() {
     ok "terraform already installed"
   fi
 
+  # aws-cli (v2; upstream ships no 32-bit ARM build)
+  if ! command -v aws &> /dev/null; then
+    local aws_arch=""
+    case "$ARCH" in
+      amd64) aws_arch="x86_64" ;;
+      arm64) aws_arch="aarch64" ;;
+      *) warn "AWS CLI v2 has no Linux ${ARCH} build — skipping" ;;
+    esac
+    if [[ -n "$aws_arch" ]]; then
+      local aws_tmp
+      aws_tmp="$(mktemp -d)"
+      if curl -fsSL -o "$aws_tmp/awscliv2.zip" \
+        "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" \
+        && unzip -q "$aws_tmp/awscliv2.zip" -d "$aws_tmp"; then
+        sudo "$aws_tmp/aws/install" > /dev/null
+        ok "aws-cli installed"
+      else
+        warn "aws-cli download failed"
+      fi
+      rm -rf "$aws_tmp"
+    fi
+  else
+    ok "aws-cli already installed"
+  fi
+
   # vscode
   if ! command -v code &> /dev/null && [ ! -f "/usr/local/bin/code" ]; then
     case "$DISTRO" in
