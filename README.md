@@ -2,7 +2,7 @@
 
 A clean, modern **Zsh** setup with **Oh My Zsh** and a custom two-line prompt, tailored for developers.
 
-Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)** and **WSL**.
+Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
 
 ## Features
 
@@ -25,13 +25,11 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)** and
 
 ### One-liner (recommended)
 
-Automatically detects WSL vs. native Linux and runs the right installer:
-
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/kayaman/dotfiles/main/bootstrap.sh)
 ```
 
-The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs the appropriate installer. If the repo is already present it pulls the latest changes instead of re-cloning.
+The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs `install.sh`. If the repo is already present it pulls the latest changes instead of re-cloning.
 
 ### Manual installation
 
@@ -58,22 +56,12 @@ Same installer as native Linux — Pi is detected automatically via `/proc/devic
 bash install.sh
 ```
 
-#### WSL (Windows Subsystem for Linux)
-
-A slimmer installation for WSL environments. Supports **Ubuntu/Debian**, **openSUSE**, and **Fedora** in WSL. Skips desktop-specific components and container daemons.
-
-```bash
-bash wsl/install.sh
-```
-
 ## Structure
 
 ```
 dotfiles/
 ├── bootstrap.sh                  # One-liner bootstrap: clones repo and runs the right installer
-├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu/Fedora)
-├── wsl/
-│   └── install.sh                # Dedicated installer for WSL
+├── install.sh                    # Installer for Native Linux (openSUSE/Ubuntu/Fedora)
 ├── stow/                         # Stow packages — each is symlinked into $HOME
 │   ├── zsh/                      # .zshrc, .aliases, .functions, .path
 │   ├── git/                      # .gitconfig, .gitignore_global
