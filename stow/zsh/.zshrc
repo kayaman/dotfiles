@@ -41,13 +41,17 @@ log_step "Starting .zshrc"
 # ── Oh My Zsh ────────────────────────────────────────────────
 export ZSH="$HOME/.oh-my-zsh"
 
-ZSH_THEME="bira"
+ZSH_THEME=""
 
 plugins=(
     git
     zsh-autosuggestions
     zsh-syntax-highlighting
 )
+
+# Render git_prompt_info synchronously so the branch shows on the very
+# first prompt (OMZ defaults to async, which only populates after a redraw).
+zstyle ':omz:alpha:lib:git' async-prompt no
 
 if [[ -d "$ZSH/custom/plugins/zsh-completions" ]]; then
     plugins+=(zsh-completions)
@@ -102,11 +106,24 @@ if [[ -d "$DOTFILES/snippets" ]]; then
     done
 fi
 
-# ── Starship prompt (Removed) ─────────────────────────────────
+# ── GPG TTY ──────────────────────────────────────────────────
 if [[ -t 0 ]]; then
     _gpg_tty=$(tty 2>/dev/null) && export GPG_TTY="$_gpg_tty"
     unset _gpg_tty
 fi
+
+# ── Prompt (two-line, OMZ-powered, no external prompt manager) ──
+# git_prompt_info comes from OMZ's lib/git.zsh and is available
+# regardless of ZSH_THEME — so we set ZSH_THEME="" above and drive
+# PROMPT ourselves.
+ZSH_THEME_GIT_PROMPT_PREFIX="%F{8}on%f %F{magenta}  "
+ZSH_THEME_GIT_PROMPT_SUFFIX="%f "
+ZSH_THEME_GIT_PROMPT_DIRTY=" %F{yellow}!%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+PROMPT='%F{8}╭─%f %F{cyan}%n%f%F{8}@%f%F{cyan}%m%f  %F{blue}%~%f $(git_prompt_info)
+%F{8}╰─%f %(?.%F{green}.%F{red})❯%f '
+RPROMPT='%F{8}%*%f'
 
 # ── NVM (Lazy Load Optimization) ──────────────────────────────
 log_step "NVM setup (lazy)"
@@ -145,3 +162,5 @@ fi
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 [ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+. "$HOME/.local/share/../bin/env"

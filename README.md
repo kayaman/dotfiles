@@ -1,13 +1,13 @@
 # dotfiles
 
-A clean, modern **Zsh** setup with **Oh My Zsh** and **Starship** prompt, tailored for developers.
+A clean, modern **Zsh** setup with **Oh My Zsh** and a custom two-line prompt, tailored for developers.
 
 Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)** and **WSL**.
 
 ## Features
 
 - **Shell:** Zsh + Oh My Zsh
-- **Prompt:** [Starship](https://starship.rs)
+- **Prompt:** custom two-line PROMPT in `.zshrc` (uses OMZ's `git_prompt_info`; no external prompt manager)
 - **Plugins:** `zsh-autosuggestions`, `zsh-syntax-highlighting`, `zsh-completions`
 - **Modern CLI Tools:**
   - [eza](https://eza.rocks) (better `ls`)
@@ -77,7 +77,6 @@ dotfiles/
 ├── stow/                         # Stow packages — each is symlinked into $HOME
 │   ├── zsh/                      # .zshrc, .aliases, .functions, .path
 │   ├── git/                      # .gitconfig, .gitignore_global
-│   ├── starship/                 # .config/starship.toml
 │   ├── ripgrep/                  # .config/ripgrep/config
 │   ├── readline/                 # .inputrc
 │   ├── tree/                     # .treeglobal (global ignore patterns for tree)
@@ -109,7 +108,7 @@ dotfiles/
 ## After Installation
 
 1. Restart your terminal or run `exec zsh`.
-2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render Starship prompt symbols.
+2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render prompt symbols.
 3. Configure your Git user and GPG signing preferences by running:
    ```bash
    ./scripts/setup-git.sh

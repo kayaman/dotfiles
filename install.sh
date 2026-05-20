@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  Dotfiles Installer — Linux (openSUSE, Ubuntu, Fedora)
-#  Installs system packages, dev tools, Oh My Zsh, Starship, and symlinks dotfiles.
+#  Installs system packages, dev tools, Oh My Zsh, and symlinks dotfiles.
 # =============================================================================
 
 set -euo pipefail
@@ -202,14 +202,6 @@ install_dev_tools() {
     fi
   else
     ok "zed already installed"
-  fi
-
-  # starship
-  if ! command -v starship &> /dev/null && [ ! -f "/usr/local/bin/starship" ]; then
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
-    ok "starship installed"
-  else
-    ok "starship already installed"
   fi
 
   # claude code
