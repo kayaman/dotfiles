@@ -581,15 +581,21 @@ set_default_shell() {
     return
   }
 
-  if [[ "$SHELL" != "$zsh_path" ]]; then
-    if ! grep -qxF "$zsh_path" /etc/shells; then
-      echo "$zsh_path" | sudo tee -a /etc/shells > /dev/null
-    fi
-    chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
-    ok "Default shell set to zsh"
-  else
+  # Avoid the chsh password prompt when zsh is already the login shell.
+  # Compare via basename + real login shell from passwd, since $SHELL may
+  # disagree with `command -v zsh` on the path (e.g. /bin/zsh vs /usr/bin/zsh).
+  local login_shell
+  login_shell="$(getent passwd "$USER" 2> /dev/null | cut -d: -f7)"
+  if [[ "$(basename "${login_shell:-$SHELL}")" == "zsh" ]]; then
     ok "Default shell is already zsh"
+    return
   fi
+
+  if ! grep -qxF "$zsh_path" /etc/shells; then
+    echo "$zsh_path" | sudo tee -a /etc/shells > /dev/null
+  fi
+  chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
+  ok "Default shell set to zsh"
 }
 
 main() {
