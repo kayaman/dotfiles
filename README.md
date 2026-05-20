@@ -27,10 +27,10 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
 ### One-liner (recommended)
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/kayaman/dotfiles/main/bootstrap.sh)
+bash <(curl -fsSL https://dot.ai-assisted.dev)
 ```
 
-The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs `install.sh`. If the repo is already present it pulls the latest changes instead of re-cloning.
+The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs `install.sh`. If the repo is already present it pulls the latest changes instead of re-cloning. The short URL is served via CloudFront — see [`terraform/`](terraform/) for the infrastructure.
 
 ### Manual installation
 

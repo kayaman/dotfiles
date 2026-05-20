@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  Dotfiles Bootstrap — clone & install
-#  Usage: bash <(curl -fsSL https://raw.githubusercontent.com/kayaman/dotfiles/main/bootstrap.sh)
+#  Usage: bash <(curl -fsSL https://dot.ai-assisted.dev)
 # =============================================================================
 
 set -euo pipefail

@@ -11,3 +11,9 @@ dotfiles.sops.toml
 .env
 .env.sh
 .claude
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
