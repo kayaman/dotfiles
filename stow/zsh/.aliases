@@ -86,3 +86,5 @@ alias gpgls='gpg --list-secret-keys --keyid-format=long'
 
 alias pb='cd "$HOME/Projects/blogmarks"'
 alias pm='cd "$HOME/Projects/magj-dev"'
+
+alias suclaude='claude --dangerously-skip-permissions'
