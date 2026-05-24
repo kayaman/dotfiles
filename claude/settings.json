@@ -1,0 +1,77 @@
+{
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "playground@claude-plugins-official": true,
+    "greptile@claude-plugins-official": true,
+    "linear@claude-plugins-official": true,
+    "learning-output-style@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "remember@claude-plugins-official": true,
+    "deploy-on-aws@claude-plugins-official": true,
+    "aws-serverless@claude-plugins-official": true,
+    "terraform@claude-plugins-official": true,
+    "desktop-commander@claude-plugins-official": true,
+    "ghostty-notifications@recursechat-agent-workflow": true,
+    "yolo@recursechat-agent-workflow": true
+  },
+  "extraKnownMarketplaces": {
+    "recursechat-agent-workflow": {
+      "source": {
+        "source": "github",
+        "repo": "recursechat/agent-workflow"
+      }
+    }
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/ghostty-notify.sh 'Needs permission'"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/ghostty-notify.sh 'Waiting for input'"
+          }
+        ]
+      },
+      {
+        "matcher": "auth_success",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/ghostty-notify.sh 'Auth successful'"
+          }
+        ]
+      },
+      {
+        "matcher": "elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/ghostty-notify.sh 'Asking a question'"
+          }
+        ]
+      }
+    ]
+  }
+}

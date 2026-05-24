@@ -567,7 +567,24 @@ fix_cedilla() {
   bash "$DOTFILES/scripts/fix-cedilla.sh"
 }
 
-# ── 6. Default Shell ─────────────────────────────────────────
+# ── 6. Claude Code config ────────────────────────────────────
+install_claude_config() {
+  section "Claude Code Config"
+  if ! command -v claude &> /dev/null; then
+    warn "claude CLI not found — skipping Claude config restore"
+    return
+  fi
+  if [[ ! -d "$DOTFILES/claude" ]]; then
+    warn "No claude/ config in repo — skipping"
+    return
+  fi
+  # Plugin install failures (offline / not logged in) are tolerated by the
+  # script, so this never aborts the installer.
+  bash "$DOTFILES/scripts/claude-sync.sh" restore
+  ok "Claude config restored"
+}
+
+# ── 7. Default Shell ─────────────────────────────────────────
 set_default_shell() {
   section "Default Shell"
   local zsh_path
@@ -607,6 +624,7 @@ main() {
   symlink_dotfiles
   install_oh_my_zsh
   install_dev_tools
+  install_claude_config
   install_alacritty
   install_chrome
   fix_cedilla

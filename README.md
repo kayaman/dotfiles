@@ -77,6 +77,7 @@ dotfiles/
 │   ├── tmux/                     # .config/tmux/tmux.conf (prefix: C-a)
 │   └── vim/                      # .vimrc
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
+├── claude/                       # Curated ~/.claude config (settings, hooks, skills)
 ├── scripts/                      # Setup scripts
 └── README.md
 ```
@@ -93,6 +94,7 @@ dotfiles/
   ```
   **Advanced**: For encrypted secrets, create `dotfiles.sops.toml` and encrypt it using [SOPS](https://github.com/getsops/sops). If present, it will take precedence and securely decrypt values on-the-fly. Values in the `[secrets]` section are automatically exported as environment variables.
 - **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens not managed via SOPS.
+- **Claude Code config**: A curated slice of `~/.claude` (`settings.json`, `hooks/`, `skills/`) is versioned under `claude/`. After changing your Claude setup, capture it with `./scripts/claude-sync.sh backup` and commit. On a new machine `install.sh` restores it automatically (or run `./scripts/claude-sync.sh restore`), reinstalling marketplaces and enabled plugins from `settings.json`. Login tokens (`.credentials.json`) are intentionally **not** synced — run `claude` to authenticate.
 
 ## After Installation
 
