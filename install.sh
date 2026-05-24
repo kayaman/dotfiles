@@ -166,7 +166,10 @@ install_dev_tools() {
   fi
 
   # rustup
-  if ! command -v rustup &> /dev/null && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
+  if ! command -v rustup &> /dev/null \
+    && ! command -v cargo &> /dev/null \
+    && [ ! -f "$HOME/.cargo/bin/rustup" ] \
+    && [ ! -f "$HOME/.cargo/bin/cargo" ]; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
     ok "rustup installed"
   else
