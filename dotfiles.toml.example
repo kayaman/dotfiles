@@ -69,7 +69,7 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 # ── Tools / package managers ──────────────────────────────────────────────────
 [tools]
 # node_version   = "20"              # used by setup scripts (nvm / fnm)
-# python_version = "3.12"            # used by setup scripts (pyenv / uv)
+# python_version = "3.12"            # used by setup scripts (uv)
 # ruby_version   = "3.3"
 
 
@@ -89,7 +89,6 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 # nvm    = true
 # bun    = true
 # rbenv  = false
-# pyenv  = true
 # direnv = true
 # fzf    = true
 

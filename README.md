@@ -16,7 +16,7 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
   - [ripgrep](https://github.com/BurntSushi/ripgrep) (better `grep`)
   - [fd](https://github.com/sharkdp/fd) (better `find`)
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
-- **Development Managers:** `nvm` (Node), `pyenv` (Python), `uv` (Python), `rustup` (Rust)
+- **Development Managers:** `nvm` (Node), `uv` (Python), `rustup` (Rust)
 - **DevOps:** [gh](https://cli.github.com) (GitHub CLI), [terraform](https://www.terraform.io), [aws-cli](https://aws.amazon.com/cli/) v2
 - **Containers:** Podman + Buildah + Distrobox on all Linux targets; Docker only on openSUSE/Ubuntu (Fedora uses Podman)
 

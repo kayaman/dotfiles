@@ -165,14 +165,6 @@ install_dev_tools() {
     ok "uv already installed"
   fi
 
-  # pyenv
-  if [[ ! -d "$HOME/.pyenv" ]]; then
-    curl -fsSL https://pyenv.run | bash
-    ok "pyenv installed"
-  else
-    ok "pyenv already installed"
-  fi
-
   # rustup
   if ! command -v rustup &> /dev/null && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
