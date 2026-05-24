@@ -74,8 +74,8 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 
 
 # ── Features — toggle setup-script behaviour ──────────────────────────────────
+# NOTE: illustrative placeholders — not yet read by any setup script.
 [features]
-# enable_docker      = true
 # enable_kubernetes  = false
 # enable_homebrew    = true
 # enable_1password   = false
@@ -83,8 +83,8 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 
 
 # ── Snippets — control which snippets/ files are sourced ──────────────────────
-# If a key is missing, the snippet is loaded by default.
-# Set to false to skip a snippet on this machine.
+# NOTE: illustrative — currently every snippets/*.sh is sourced unconditionally
+# (see .zshrc); the per-snippet `false` toggle is not yet honored.
 [snippets]
 # nvm    = true
 # bun    = true

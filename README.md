@@ -94,7 +94,33 @@ dotfiles/
   ```
   **Advanced**: For encrypted secrets, create `dotfiles.sops.toml` and encrypt it using [SOPS](https://github.com/getsops/sops). If present, it will take precedence and securely decrypt values on-the-fly. Values in the `[secrets]` section are automatically exported as environment variables.
 - **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens not managed via SOPS.
-- **Claude Code config**: A curated slice of `~/.claude` (`settings.json`, `hooks/`, `skills/`) is versioned under `claude/`. After changing your Claude setup, capture it with `./scripts/claude-sync.sh backup` and commit. On a new machine `install.sh` restores it automatically (or run `./scripts/claude-sync.sh restore`), reinstalling marketplaces and enabled plugins from `settings.json`. Login tokens (`.credentials.json`) are intentionally **not** synced — run `claude` to authenticate.
+- **Claude Code config**: A curated slice of `~/.claude` (`settings.json`, `hooks/`, `skills/`) is versioned under `claude/`. After changing your Claude setup, capture it with `./scripts/claude-sync.sh backup` and commit. On a new machine, run the installer with `--with claude` to install the Claude CLI and restore this config automatically (or run `./scripts/claude-sync.sh restore` directly), reinstalling marketplaces and enabled plugins from `settings.json`. Login tokens (`.credentials.json`) are intentionally **not** synced — run `claude` to authenticate.
+
+## The `dot` command
+
+`dot` is a Zsh function (defined in `stow/zsh/.functions`, available after install) that manages the dotfiles repo and its config/secrets. Run `dot help` for the authoritative list — the commands below mirror it.
+
+| Command | Description |
+| --- | --- |
+| `dot sync [msg]` | Commit local changes, `pull --rebase`, then push |
+| `dot push [msg]` | Commit all changes and push to origin |
+| `dot pull` | Pull from origin and re-apply stow links |
+| `dot status` | `git status` plus ahead/behind origin |
+| `dot diff` | Uncommitted diff (staged + unstaged) |
+| `dot edit` | Open the dotfiles repo in `$EDITOR` / `code` |
+| `dot cd` | `cd` into the dotfiles directory |
+| `dot config get <section.key>` | Read a value from `dotfiles.toml` |
+| `dot config list [section]` | List keys in a section (or all sections) |
+| `dot config apply` | Export `[secrets]` into the current shell |
+| `dot filter-install` | Register the git clean filter on this machine |
+| `dot filter-show` | List active `.dotfilter` patterns |
+| `dot filter-add <pattern>` | Append an ERE pattern to `.dotfilter` |
+| `dot check` | Dry-run: show lines that would be redacted |
+| `dot profiler [--raw]` | Profile shell startup time (slowest-first) |
+
+### Secret redaction (`.dotfilter`)
+
+Add ERE patterns (one per line) to `$DOTFILES/.dotfilter`. At `git add` time, lines matching any pattern are replaced with a redaction marker **in the git index only** — working-tree files are never modified, so your real secrets stay usable locally while staying out of commits. Run `dot filter-install` once per machine to activate the filter.
 
 ## After Installation
 
