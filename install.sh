@@ -67,7 +67,7 @@ install_system_packages() {
         git curl wget unzip tar make gcc gcc-c++ gawk jq \
         fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
         python3 python3-pip python3-pipx nodejs npm \
-        zsh podman buildah distrobox docker docker-compose
+        zsh podman buildah distrobox podman-compose podman-docker
       ;;
     ubuntu | raspberry)
       sudo apt-get update
@@ -75,7 +75,7 @@ install_system_packages() {
         git curl wget unzip tar build-essential gawk jq \
         fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt \
         python3 python3-pip python3-venv pipx \
-        zsh podman docker.io docker-compose
+        zsh podman podman-compose podman-docker
 
       # git-delta is in newer apt repos (Debian 12+, Ubuntu 22.04+); best-effort
       sudo apt-get install -y git-delta || warn "git-delta unavailable via apt — install via cargo or GitHub release"
@@ -111,7 +111,7 @@ install_system_packages() {
         git curl wget unzip tar make gcc gcc-c++ gawk jq \
         fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
         python3 python3-pip pipx nodejs npm \
-        zsh podman buildah distrobox
+        zsh podman buildah distrobox podman-compose podman-docker
       ;;
   esac
   ok "System packages installed"

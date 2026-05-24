@@ -18,7 +18,7 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
 - **Development Managers:** `nvm` (Node), `uv` (Python), `rustup` (Rust)
 - **DevOps:** [gh](https://cli.github.com) (GitHub CLI), [terraform](https://www.terraform.io), [aws-cli](https://aws.amazon.com/cli/) v2
-- **Containers:** Podman + Buildah + Distrobox on all Linux targets; Docker only on openSUSE/Ubuntu (Fedora uses Podman)
+- **Containers:** Podman + podman-compose + podman-docker on all Linux targets; Buildah + Distrobox on openSUSE/Fedora (`docker` resolves to Podman via the `podman-docker` shim)
 
 > Note: Zed editor is x86_64-only on Linux and is automatically skipped on ARM (Raspberry Pi).
 
@@ -43,7 +43,7 @@ cd ~/Projects/dotfiles
 
 #### Native Linux (openSUSE / Ubuntu / Fedora)
 
-Installs the full suite of CLI tools, dev environments, and container engines (Podman + Buildah + Distrobox; Docker on openSUSE/Ubuntu).
+Installs the full suite of CLI tools, dev environments, and container engines (Podman + podman-compose + podman-docker, plus Buildah + Distrobox on openSUSE/Fedora).
 
 ```bash
 bash install.sh
