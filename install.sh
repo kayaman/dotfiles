@@ -2,6 +2,12 @@
 # =============================================================================
 #  Dotfiles Installer — Linux (openSUSE, Ubuntu, Fedora)
 #  Installs system packages, dev tools, Oh My Zsh, and symlinks dotfiles.
+#
+#  Usage: install.sh [--with NAME]... [--without NAME]...
+#    --with NAME      force-install an opt-in component (e.g. --with claude)
+#    --without NAME   skip a component (e.g. --without podman)
+#    --help           list all components and their default state
+#  Claude (CLI + config) is opt-in; everything else installs by default.
 # =============================================================================
 
 set -euo pipefail
@@ -21,6 +27,91 @@ ok() { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err() { echo -e "${RED}[ERR]${NC}   $*" >&2; }
 section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
+
+# ── Component registry ───────────────────────────────────────
+# Toggleable install steps. `on` = installed by default (skip with --without),
+# `off` = opt-in (enable with --with). To add a new component: add an entry
+# here, then guard its install block with `want <name>`.
+declare -A COMPONENT_DEFAULT=(
+  [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
+  [claude]=off [lefthook]=on [gh]=on [terraform]=on [aws-cli]=on
+  [vscode]=on [podman]=on [alacritty]=on [chrome]=on [cedilla]=on [shell]=on
+)
+declare -A COMPONENT_STATE
+
+want() { [[ "${COMPONENT_STATE[$1]:-off}" == "on" ]]; }
+
+usage() {
+  cat << EOF
+Usage: install.sh [--with NAME]... [--without NAME]...
+
+Selects which components to install. Names may be comma-separated or the flag
+repeated (e.g. --with claude --without podman,chrome). Also accepts --with=NAME.
+
+  --with NAME      Force-install NAME (use for opt-in components like claude)
+  --without NAME   Skip NAME
+  -h, --help       Show this help
+
+Components (default state):
+EOF
+  local name
+  for name in $(printf '%s\n' "${!COMPONENT_DEFAULT[@]}" | sort); do
+    printf "  %-12s %s\n" "$name" "${COMPONENT_DEFAULT[$name]}"
+  done
+}
+
+_set_component() {
+  local name="$1" state="$2"
+  if [[ -z "${COMPONENT_DEFAULT[$name]+x}" ]]; then
+    err "Unknown component: $name"
+    err "Valid components: $(printf '%s\n' "${!COMPONENT_DEFAULT[@]}" | sort | tr '\n' ' ')"
+    exit 1
+  fi
+  COMPONENT_STATE[$name]="$state"
+}
+
+# Apply a comma-separated list of component names to a state (on|off).
+_apply_list() {
+  local state="$1" list="$2" name _names
+  IFS=',' read -ra _names <<< "$list"
+  for name in "${_names[@]}"; do
+    [[ -n "$name" ]] && _set_component "$name" "$state"
+  done
+}
+
+parse_args() {
+  local name
+  for name in "${!COMPONENT_DEFAULT[@]}"; do
+    COMPONENT_STATE[$name]="${COMPONENT_DEFAULT[$name]}"
+  done
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --with | --without)
+        local flag="$1" state="on"
+        [[ "$1" == "--without" ]] && state="off"
+        shift
+        [[ $# -gt 0 ]] || {
+          err "$flag requires a component name"
+          exit 1
+        }
+        _apply_list "$state" "$1"
+        ;;
+      --with=*) _apply_list on "${1#*=}" ;;
+      --without=*) _apply_list off "${1#*=}" ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      *)
+        err "Unknown argument: $1"
+        usage
+        exit 1
+        ;;
+    esac
+    shift
+  done
+}
 
 # ── Architecture detection ───────────────────────────────────
 case "$(uname -m)" in
@@ -62,20 +153,24 @@ install_system_packages() {
   section "System Packages"
   case "$DISTRO" in
     opensuse)
+      local pkgs=(
+        git curl wget unzip tar make gcc gcc-c++ gawk jq
+        fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck
+        python3 python3-pip python3-pipx nodejs npm zsh
+      )
+      want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo zypper refresh
-      sudo zypper install -y --no-recommends \
-        git curl wget unzip tar make gcc gcc-c++ gawk jq \
-        fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
-        python3 python3-pip python3-pipx nodejs npm \
-        zsh podman buildah distrobox podman-compose podman-docker
+      sudo zypper install -y --no-recommends "${pkgs[@]}"
       ;;
     ubuntu | raspberry)
+      local pkgs=(
+        git curl wget unzip tar build-essential gawk jq
+        fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt
+        python3 python3-pip python3-venv pipx zsh
+      )
+      want podman && pkgs+=(podman podman-compose podman-docker)
       sudo apt-get update
-      sudo apt-get install -y \
-        git curl wget unzip tar build-essential gawk jq \
-        fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt \
-        python3 python3-pip python3-venv pipx \
-        zsh podman podman-compose podman-docker
+      sudo apt-get install -y "${pkgs[@]}"
 
       # git-delta is in newer apt repos (Debian 12+, Ubuntu 22.04+); best-effort
       sudo apt-get install -y git-delta || warn "git-delta unavailable via apt — install via cargo or GitHub release"
@@ -107,11 +202,13 @@ install_system_packages() {
       fi
       ;;
     fedora)
-      sudo dnf install -y --setopt=install_weak_deps=False \
-        git curl wget unzip tar make gcc gcc-c++ gawk jq \
-        fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck \
-        python3 python3-pip pipx nodejs npm \
-        zsh podman buildah distrobox podman-compose podman-docker
+      local pkgs=(
+        git curl wget unzip tar make gcc gcc-c++ gawk jq
+        fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck
+        python3 python3-pip pipx nodejs npm zsh
+      )
+      want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
+      sudo dnf install -y --setopt=install_weak_deps=False "${pkgs[@]}"
       ;;
   esac
   ok "System packages installed"
@@ -146,10 +243,7 @@ install_oh_my_zsh() {
 }
 
 # ── 3. Dev Tools & Managers ──────────────────────────────────
-install_dev_tools() {
-  section "Development Tools"
-
-  # nvm
+install_nvm() {
   if [[ ! -d "$HOME/.nvm" ]]; then
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
     ok "nvm installed"
@@ -157,7 +251,9 @@ install_dev_tools() {
     ok "nvm already installed"
   fi
 
-  # uv
+}
+
+install_uv() {
   if ! command -v uv &> /dev/null && [ ! -f "$HOME/.local/bin/uv" ] && [ ! -f "$HOME/.cargo/bin/uv" ]; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
     ok "uv installed"
@@ -165,7 +261,9 @@ install_dev_tools() {
     ok "uv already installed"
   fi
 
-  # rustup
+}
+
+install_rust() {
   if ! command -v rustup &> /dev/null \
     && ! command -v cargo &> /dev/null \
     && [ ! -f "$HOME/.cargo/bin/rustup" ] \
@@ -176,7 +274,9 @@ install_dev_tools() {
     ok "rustup already installed"
   fi
 
-  # sops
+}
+
+install_sops() {
   if ! command -v sops &> /dev/null; then
     local sops_version="v3.8.1"
     local sops_url="https://github.com/getsops/sops/releases/download/${sops_version}/sops-${sops_version}.linux.${ARCH}"
@@ -187,7 +287,9 @@ install_dev_tools() {
     ok "sops already installed"
   fi
 
-  # zed
+}
+
+install_zed() {
   if ! command -v zed &> /dev/null && [ ! -f "$HOME/.local/bin/zed" ]; then
     if [[ "$ARCH" != "amd64" ]]; then
       warn "Zed has no Linux ${ARCH} build — skipping"
@@ -199,7 +301,9 @@ install_dev_tools() {
     ok "zed already installed"
   fi
 
-  # claude code
+}
+
+install_claude_code() {
   if ! command -v claude &> /dev/null && [ ! -f "$HOME/.local/bin/claude" ]; then
     curl -fsSL https://claude.ai/install.sh | bash
     ok "claude code installed"
@@ -207,7 +311,10 @@ install_dev_tools() {
     ok "claude code already installed"
   fi
 
-  # lefthook (pre-commit runner; not in distro repos)
+}
+
+# lefthook — pre-commit runner; not in distro repos
+install_lefthook() {
   if ! command -v lefthook &> /dev/null && [ ! -f "$HOME/.local/bin/lefthook" ]; then
     local lefthook_version="v2.1.6"
     local lefthook_arch
@@ -225,7 +332,10 @@ install_dev_tools() {
     ok "lefthook already installed"
   fi
 
-  # gh (GitHub CLI)
+}
+
+# gh — GitHub CLI
+install_gh() {
   if ! command -v gh &> /dev/null; then
     local gh_version="2.65.0"
     local gh_arch
@@ -249,7 +359,9 @@ install_dev_tools() {
     ok "gh already installed"
   fi
 
-  # terraform
+}
+
+install_terraform() {
   if ! command -v terraform &> /dev/null; then
     local tf_version="1.10.5"
     local tf_arch
@@ -274,7 +386,10 @@ install_dev_tools() {
     ok "terraform already installed"
   fi
 
-  # aws-cli (v2; upstream ships no 32-bit ARM build)
+}
+
+# aws-cli — v2; upstream ships no 32-bit ARM build
+install_awscli() {
   if ! command -v aws &> /dev/null; then
     local aws_arch=""
     case "$ARCH" in
@@ -299,7 +414,9 @@ install_dev_tools() {
     ok "aws-cli already installed"
   fi
 
-  # vscode
+}
+
+install_vscode() {
   if ! command -v code &> /dev/null && [ ! -f "/usr/local/bin/code" ]; then
     case "$DISTRO" in
       opensuse)
@@ -333,6 +450,23 @@ install_dev_tools() {
   else
     ok "VSCode already installed"
   fi
+}
+
+# Dispatcher — each tool runs only when its component is enabled.
+install_dev_tools() {
+  section "Development Tools"
+  want nvm && install_nvm
+  want uv && install_uv
+  want rust && install_rust
+  want sops && install_sops
+  want zed && install_zed
+  want claude && install_claude_code
+  want lefthook && install_lefthook
+  want gh && install_gh
+  want terraform && install_terraform
+  want aws-cli && install_awscli
+  want vscode && install_vscode
+  return 0
 }
 
 # ── 3b. Alacritty (distro package, fall back to source build) ──────
@@ -611,6 +745,8 @@ set_default_shell() {
 }
 
 main() {
+  parse_args "$@"
+
   echo ""
   echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
   echo -e "${CYAN}║     dotfiles installer - Linux Native    ║${NC}"
@@ -622,13 +758,13 @@ main() {
   # exists, which makes stow abort the entire zsh package on conflict. Stowing
   # first means OMZ (run with KEEP_ZSHRC=yes) sees the symlink and leaves it.
   symlink_dotfiles
-  install_oh_my_zsh
+  if want omz; then install_oh_my_zsh; fi
   install_dev_tools
-  install_claude_config
-  install_alacritty
-  install_chrome
-  fix_cedilla
-  set_default_shell
+  if want claude; then install_claude_config; fi
+  if want alacritty; then install_alacritty; fi
+  if want chrome; then install_chrome; fi
+  if want cedilla; then fix_cedilla; fi
+  if want shell; then set_default_shell; fi
 
   echo ""
   ok "Installation complete! Restart your terminal or run: exec zsh"

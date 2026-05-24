@@ -38,5 +38,6 @@ else
 fi
 
 # ── Run the installer ────────────────────────────────────────
+# Forward any args (e.g. --with claude, --without podman) to the installer.
 info "Running installer"
-bash "$DOTFILES_DIR/install.sh"
+bash "$DOTFILES_DIR/install.sh" "$@"

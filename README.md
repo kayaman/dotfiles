@@ -57,6 +57,21 @@ Same installer as native Linux — Pi is detected automatically via `/proc/devic
 bash install.sh
 ```
 
+### Selecting components
+
+The installer installs everything by default **except** Claude Code, which is opt-in. Use `--with` / `--without` to override:
+
+```bash
+bash install.sh --with claude              # also install the Claude CLI + config
+bash install.sh --without podman           # skip Podman and friends
+bash install.sh --with claude --without chrome,vscode
+bash install.sh --help                     # list all components and their defaults
+```
+
+Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.dev) --with claude`. Names may be comma-separated or the flag repeated.
+
+Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`. To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh` and guard its install step with `want <name>`.
+
 ## Structure
 
 ```
@@ -130,3 +145,4 @@ Add ERE patterns (one per line) to `$DOTFILES/.dotfilter`. At `git add` time, li
    ```bash
    ./scripts/setup-git.sh
    ```
+4. If you keep secrets in `dotfiles.toml`, run `dot filter-install` once on this machine to activate the secret-redaction git filter before committing. Use `dot config apply` to export `[secrets]` into your shell.
