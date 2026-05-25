@@ -88,7 +88,13 @@ fi
 export DOTFILES
 
 source_if_exists() {
-    [[ -s "$1" ]] && . "$1"
+    [[ -s "$1" ]] || return 0
+    # LOCAL_OPTIONS reverts any shell options the file changes (e.g. a stray
+    # `set -e`) when this function returns, so a buggy sourced file can't abort
+    # the rest of init; `return 0` keeps a non-zero exit from propagating.
+    setopt local_options
+    . "$1"
+    return 0
 }
 
 log_step "Sourcing env/aliases/functions"
