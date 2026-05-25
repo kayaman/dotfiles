@@ -156,7 +156,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar make gcc gcc-c++ gawk jq
         fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck
-        python3 python3-pip python3-pipx nodejs npm zsh
+        python3 python3-pip python3-pipx nodejs npm zsh xclip
       )
       want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo zypper refresh
@@ -166,7 +166,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar build-essential gawk jq
         fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt
-        python3 python3-pip python3-venv pipx zsh
+        python3 python3-pip python3-venv pipx zsh xclip
       )
       want podman && pkgs+=(podman podman-compose podman-docker)
       sudo apt-get update
@@ -205,7 +205,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar make gcc gcc-c++ gawk jq
         fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck
-        python3 python3-pip pipx nodejs npm zsh
+        python3 python3-pip pipx nodejs npm zsh xclip
       )
       want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo dnf install -y --setopt=install_weak_deps=False "${pkgs[@]}"
