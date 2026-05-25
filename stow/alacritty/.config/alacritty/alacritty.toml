@@ -3,10 +3,39 @@
 
 [window]
 padding = { x = 4, y = 4 }
-decorations = "none"
+decorations = "full"
 
 [font]
 size = 14.5
 
 [scrolling]
 history = 10000
+
+# Launch into tmux so we get tabs (windows) and splits (panes).
+# Alacritty on Linux has no native tabs/splits; tmux provides them.
+[terminal]
+shell = { program = "tmux" }
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"
+
+# tmux prefix is Ctrl-A, set in ~/.config/tmux/tmux.conf.
+# New tab -> tmux prefix c (new-window)
+[[keyboard.bindings]]
+key = "T"
+mods = "Control|Shift"
+chars = "\u0001c"
+
+# Split right / side-by-side -> tmux prefix | (split-window -h)
+[[keyboard.bindings]]
+key = "E"
+mods = "Control|Shift"
+chars = "\u0001|"
+
+# Split down / stacked -> tmux prefix - (split-window -v)
+[[keyboard.bindings]]
+key = "D"
+mods = "Control|Shift"
+chars = "\u0001-"
