@@ -10,3 +10,13 @@ OPENAI_API_KEY\s*=.*
 password\s*=.*
 secret\s*=.*
 api_key\s*=.*
+AWS_ACCESS_KEY_ID\s*=.*
+AWS_SECRET_ACCESS_KEY\s*=.*
+DATABASE_URL\s*=.*
+-----BEGIN [A-Z ]*PRIVATE KEY-----
+-----END [A-Z ]*PRIVATE KEY-----
+gh[posru]_[A-Za-z0-9]{20,}
+github_pat_[A-Za-z0-9_]{20,}
+sk-[A-Za-z0-9]{20,}
+xox[baprs]-[A-Za-z0-9-]{10,}
+https://hooks\.slack\.com/\S+

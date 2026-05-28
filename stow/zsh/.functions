@@ -6,7 +6,7 @@
 # ─────────────────────────────────────────────────────────────
 
 gpg-by-id() {
-        echo $(gpg --armor --export-options export-minimal --export $1) | xclip -sel clip
+        gpg --armor --export-options export-minimal --export "$1" | xclip -sel clip
         echo "The GPG public key was copied to clipboard"
 }
 
@@ -648,6 +648,7 @@ dot() {
                         "while IFS= read -r pattern; do" \
                         "    [[ -z \"\$pattern\" || \"\$pattern\" == \#* ]] && continue" \
                         "    pattern=\"\${pattern//\//\\/}\"" \
+                        "    pattern=\"\${pattern//|/\\|}\"" \
                         "    sed_expr=\"\${sed_expr}s|\${pattern}|# [REDACTED by dot-filter]|Ig;\"" \
                         "done < \"\$DOTFILTER\"" \
                         "[[ -z \"\$sed_expr\" ]] && { cat; exit 0; }" \
@@ -1094,12 +1095,12 @@ function eval_ssh_agent() {
 }
 
 function ght() {
-        echo $GITHUB_PAT | xclip -sel clip
+        printf '%s' "$GITHUB_PAT" | xclip -sel clip
         echo "Token copied to clipboard!"
 }
 
 function ghk() {
-        echo $GITHUB_KAYAMAN_PAT | xclip -sel clip
+        printf '%s' "$GITHUB_KAYAMAN_PAT" | xclip -sel clip
         echo "Token copied to clipboard!"
 }
 
