@@ -16,8 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: mfinelli/setup-shfmt@v3
       - name: shfmt -d
-        # Exclude lefthook's auto-generated pre-commit hook; we don't own its style.
-        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f . | grep -v '^stow/git/\.githooks/')
+        # Exclude:
+        #   - stow/git/.githooks/ — lefthook-generated, we don't own its style
+        #   - stow/zsh/           — zsh files; shfmt is a bash formatter and
+        #                           misparses zsh-specific syntax (e.g. ${!arr[@]},
+        #                           parameter modifiers). The `syntax` job below
+        #                           runs `zsh -n` on these instead.
+        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f . | grep -vE '^(stow/git/\.githooks/|stow/zsh/)')
 
   shellcheck:
     name: shellcheck
@@ -30,9 +35,12 @@ jobs:
           SHELLCHECK_OPTS: -e SC1091
         with:
           severity: warning
-          # Exclude the lefthook-generated pre-commit hook — same exclusion
-          # the shfmt job uses, since we don't own its style.
-          ignore_paths: stow/git/.githooks
+          # Exclude:
+          #   - stow/git/.githooks — lefthook-generated, we don't own its style
+          #   - stow/zsh           — zsh files; shellcheck is a bash linter and
+          #                          flags zsh-only constructs as errors. The
+          #                          `syntax` job runs `zsh -n` on these instead.
+          ignore_paths: stow/git/.githooks stow/zsh
 
   syntax:
     name: bash -n
