@@ -146,12 +146,32 @@ npm()  { load_nvm; npm "$@"; }
 npx()  { load_nvm; npx "$@"; }
 
 # ── External Tools ────────────────────────────────────────────
-# The next line updates PATH for the Google Cloud SDK.
-log_step "GCloud SDK"
-if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/google-cloud-sdk/path.zsh.inc"; fi
-
 log_step "Flutter"
 _add_to_path "$HOME/development/flutter/bin"
+
+# Bun — PATH is already added by .path. The completion file is heavy
+# (compdef machinery), so it loads on first `bun`/`bunx` invocation.
+log_step "Bun (lazy completion)"
+export BUN_INSTALL="$HOME/.bun"
+if [ -x "$BUN_INSTALL/bin/bun" ] && [ -s "$BUN_INSTALL/_bun" ]; then
+    bun()  { unset -f bun bunx; source "$BUN_INSTALL/_bun"; bun "$@"; }
+    bunx() { unset -f bun bunx; source "$BUN_INSTALL/_bun"; bunx "$@"; }
+fi
+
+# GCloud — path.zsh.inc and completion.zsh.inc together add ~50ms.
+# Stubs only exist if the SDK is actually installed locally.
+log_step "GCloud (lazy)"
+if [ -d "$HOME/google-cloud-sdk" ]; then
+    load_gcloud() {
+        log_step "Loading GCloud (first use)"
+        unset -f gcloud gsutil bq load_gcloud
+        [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
+        [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
+    }
+    gcloud() { load_gcloud; gcloud "$@"; }
+    gsutil() { load_gcloud; gsutil "$@"; }
+    bq()     { load_gcloud; bq "$@"; }
+fi
 
 log_step "Finished .zshrc"
 
@@ -160,14 +180,3 @@ if [[ -n "$ZSH_PROF" ]]; then
     unalias source 2>/dev/null
     unalias . 2>/dev/null
 fi
-
-# ── Bun ───────────────────────────────────────────────────────
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/kayaman/google-cloud-sdk/path.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/kayaman/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/completion.zsh.inc'; fi

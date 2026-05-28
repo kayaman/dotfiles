@@ -3,14 +3,24 @@
 #  Dotfiles Installer — Linux (openSUSE, Ubuntu, Fedora)
 #  Installs system packages, dev tools, Oh My Zsh, and symlinks dotfiles.
 #
-#  Usage: install.sh [--with NAME]... [--without NAME]...
+#  Usage: install.sh [--with NAME]... [--without NAME]... [--dry-run] [--verbose]
+#         install.sh --uninstall
 #    --with NAME      force-install an opt-in component (e.g. --with claude)
 #    --without NAME   skip a component (e.g. --without podman)
+#    --dry-run        print which components would run; touch nothing on disk
+#    --verbose        echo every command (set -x) for debugging
+#    --uninstall      remove all stow symlinks and print (not execute) the
+#                     package-manager commands to undo each install step
 #    --help           list all components and their default state
 #  Claude (CLI + config) is opt-in; everything else installs by default.
 # =============================================================================
 
 set -euo pipefail
+trap 'err "Failed at line $LINENO: $BASH_COMMAND"' ERR
+
+DRY_RUN=0
+VERBOSE=0
+UNINSTALL=0
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${XDG_CONFIG_HOME:="$HOME/.config"}"
@@ -34,22 +44,37 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 # here, then guard its install block with `want <name>`.
 declare -A COMPONENT_DEFAULT=(
   [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
-  [claude]=off [lefthook]=on [gh]=on [terraform]=on [aws-cli]=on
+  [claude]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
   [vscode]=on [podman]=on [alacritty]=on [chrome]=on [cedilla]=on [shell]=on
 )
 declare -A COMPONENT_STATE
 
 want() { [[ "${COMPONENT_STATE[$1]:-off}" == "on" ]]; }
 
+# run_step <fn> [args...] — call an install step or print what would run.
+# Skipped components (`want X` false) are filtered by callers before reaching
+# here, so a step that gets passed in is one we'd actually execute.
+run_step() {
+  local fn="$1"
+  shift
+  if [[ "$DRY_RUN" == "1" ]]; then
+    info "[DRY] Would run: $fn $*"
+    return 0
+  fi
+  "$fn" "$@"
+}
+
 usage() {
   cat << EOF
-Usage: install.sh [--with NAME]... [--without NAME]...
+Usage: install.sh [--with NAME]... [--without NAME]... [--dry-run] [--verbose]
 
 Selects which components to install. Names may be comma-separated or the flag
 repeated (e.g. --with claude --without podman,chrome). Also accepts --with=NAME.
 
   --with NAME      Force-install NAME (use for opt-in components like claude)
   --without NAME   Skip NAME
+  --dry-run        Print which components would run without making changes
+  --verbose        Echo every command for debugging
   -h, --help       Show this help
 
 Components (default state):
@@ -99,6 +124,9 @@ parse_args() {
         ;;
       --with=*) _apply_list on "${1#*=}" ;;
       --without=*) _apply_list off "${1#*=}" ;;
+      --dry-run) DRY_RUN=1 ;;
+      --verbose) VERBOSE=1 ;;
+      --uninstall) UNINSTALL=1 ;;
       -h | --help)
         usage
         exit 0
@@ -120,6 +148,20 @@ case "$(uname -m)" in
   armv7l | armhf) ARCH="armhf" ;;
   *) ARCH="$(uname -m)" ;;
 esac
+
+# arch_for <tool> -> the arch token that <tool>'s upstream release uses.
+# Each tool's release filenames disagree on naming (x86_64 vs amd64, arm vs
+# armv6 vs armhf); centralizing the mapping makes the differences explicit
+# and means a new arch only needs to be added in one place.
+arch_for() {
+  case "$1:$ARCH" in
+    awscli:amd64 | lefthook:amd64) echo x86_64 ;;
+    awscli:arm64 | lefthook:arm64) echo aarch64 ;;
+    terraform:armhf) echo arm ;;
+    gh:armhf) echo armv6 ;;
+    *) echo "$ARCH" ;;
+  esac
+}
 
 # ── Distro detection ─────────────────────────────────────────
 detect_distro() {
@@ -318,11 +360,7 @@ install_lefthook() {
   if ! command -v lefthook &> /dev/null && [ ! -f "$HOME/.local/bin/lefthook" ]; then
     local lefthook_version="v2.1.6"
     local lefthook_arch
-    case "$ARCH" in
-      amd64) lefthook_arch="x86_64" ;;
-      arm64) lefthook_arch="aarch64" ;;
-      *) lefthook_arch="$ARCH" ;;
-    esac
+    lefthook_arch="$(arch_for lefthook)"
     mkdir -p "$HOME/.local/bin"
     curl -fsSL -o "$HOME/.local/bin/lefthook" \
       "https://github.com/evilmartians/lefthook/releases/download/${lefthook_version}/lefthook_${lefthook_version#v}_Linux_${lefthook_arch}"
@@ -339,12 +377,7 @@ install_gh() {
   if ! command -v gh &> /dev/null; then
     local gh_version="2.65.0"
     local gh_arch
-    case "$ARCH" in
-      amd64) gh_arch="amd64" ;;
-      arm64) gh_arch="arm64" ;;
-      armhf) gh_arch="armv6" ;;
-      *) gh_arch="amd64" ;;
-    esac
+    gh_arch="$(arch_for gh)"
     local gh_tmp
     gh_tmp="$(mktemp -d)"
     if curl -fsSL "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_${gh_arch}.tar.gz" \
@@ -365,12 +398,7 @@ install_terraform() {
   if ! command -v terraform &> /dev/null; then
     local tf_version="1.10.5"
     local tf_arch
-    case "$ARCH" in
-      amd64) tf_arch="amd64" ;;
-      arm64) tf_arch="arm64" ;;
-      armhf) tf_arch="arm" ;;
-      *) tf_arch="amd64" ;;
-    esac
+    tf_arch="$(arch_for terraform)"
     local tf_tmp
     tf_tmp="$(mktemp -d)"
     if curl -fsSL -o "$tf_tmp/terraform.zip" \
@@ -392,9 +420,10 @@ install_terraform() {
 install_awscli() {
   if ! command -v aws &> /dev/null; then
     local aws_arch=""
+    # arch_for falls through to $ARCH for unsupported (e.g. armhf); detect
+    # by checking for the two known-good tokens to keep the skip behavior.
     case "$ARCH" in
-      amd64) aws_arch="x86_64" ;;
-      arm64) aws_arch="aarch64" ;;
+      amd64 | arm64) aws_arch="$(arch_for awscli)" ;;
       *) warn "AWS CLI v2 has no Linux ${ARCH} build — skipping" ;;
     esac
     if [[ -n "$aws_arch" ]]; then
@@ -455,17 +484,17 @@ install_vscode() {
 # Dispatcher — each tool runs only when its component is enabled.
 install_dev_tools() {
   section "Development Tools"
-  want nvm && install_nvm
-  want uv && install_uv
-  want rust && install_rust
-  want sops && install_sops
-  want zed && install_zed
-  want claude && install_claude_code
-  want lefthook && install_lefthook
-  want gh && install_gh
-  want terraform && install_terraform
-  want aws-cli && install_awscli
-  want vscode && install_vscode
+  want nvm && run_step install_nvm
+  want uv && run_step install_uv
+  want rust && run_step install_rust
+  want sops && run_step install_sops
+  want zed && run_step install_zed
+  want claude && run_step install_claude_code
+  want lefthook && run_step install_lefthook
+  want gh && run_step install_gh
+  want terraform && run_step install_terraform
+  want aws-cli && run_step install_awscli
+  want vscode && run_step install_vscode
   return 0
 }
 
@@ -744,30 +773,85 @@ set_default_shell() {
   ok "Default shell set to zsh"
 }
 
+# ── Uninstall ────────────────────────────────────────────────
+# Removes stow symlinks; intentionally does NOT uninstall packages —
+# stowed configs may be referenced by tools you still want to keep
+# around. Tool-removal commands are printed for the user to run manually.
+uninstall_dotfiles() {
+  section "Uninstall"
+
+  if ! command -v stow &> /dev/null; then
+    warn "stow is not installed — nothing to unstow"
+  elif [[ ! -d "$DOTFILES/stow" ]]; then
+    warn "$DOTFILES/stow missing — nothing to unstow"
+  else
+    local pkg
+    cd "$DOTFILES/stow"
+    for pkg in */; do
+      pkg="${pkg%/}"
+      if [[ "$DRY_RUN" == "1" ]]; then
+        info "[DRY] Would: stow -D -t $HOME $pkg"
+      else
+        stow -D -t "$HOME" "$pkg" 2> /dev/null && ok "Unstowed $pkg" \
+          || warn "Could not unstow $pkg (already removed?)"
+      fi
+    done
+    cd "$DOTFILES"
+  fi
+
+  echo ""
+  info "Stow symlinks have been removed."
+  info "Tools installed by install.sh are NOT removed automatically — too easy"
+  info "to break things that depend on them. To remove them yourself:"
+  echo ""
+  case "$DISTRO" in
+    opensuse) echo "  sudo zypper remove eza bat fzf fd ripgrep git-delta tmux stow shellcheck shfmt" ;;
+    ubuntu | raspberry) echo "  sudo apt-get remove eza bat fd-find ripgrep tmux stow shellcheck shfmt" ;;
+    fedora) echo "  sudo dnf remove eza bat fd-find ripgrep git-delta tmux stow ShellCheck shfmt" ;;
+  esac
+  echo "  rm -rf ~/.oh-my-zsh ~/.nvm ~/.config/nvm ~/.cargo ~/.rustup"
+  echo "  rm -f /usr/local/bin/{sops,gh,terraform} ~/.local/bin/lefthook"
+  echo "  rm -rf ~/.bun"
+  echo ""
+  ok "Uninstall complete."
+}
+
 main() {
   parse_args "$@"
+
+  [[ "$VERBOSE" == "1" ]] && set -x
+
+  if [[ "$UNINSTALL" == "1" ]]; then
+    uninstall_dotfiles
+    exit 0
+  fi
 
   echo ""
   echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
   echo -e "${CYAN}║     dotfiles installer - Linux Native    ║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
+  [[ "$DRY_RUN" == "1" ]] && echo -e "${YELLOW}    DRY RUN — no changes will be made${NC}"
   echo ""
 
-  install_system_packages
+  run_step install_system_packages
   # Stow before Oh My Zsh: OMZ's installer writes a template ~/.zshrc when none
   # exists, which makes stow abort the entire zsh package on conflict. Stowing
   # first means OMZ (run with KEEP_ZSHRC=yes) sees the symlink and leaves it.
-  symlink_dotfiles
-  if want omz; then install_oh_my_zsh; fi
+  run_step symlink_dotfiles
+  if want omz; then run_step install_oh_my_zsh; fi
   install_dev_tools
-  if want claude; then install_claude_config; fi
-  if want alacritty; then install_alacritty; fi
-  if want chrome; then install_chrome; fi
-  if want cedilla; then fix_cedilla; fi
-  if want shell; then set_default_shell; fi
+  if want claude; then run_step install_claude_config; fi
+  if want alacritty; then run_step install_alacritty; fi
+  if want chrome; then run_step install_chrome; fi
+  if want cedilla; then run_step fix_cedilla; fi
+  if want shell; then run_step set_default_shell; fi
 
   echo ""
-  ok "Installation complete! Restart your terminal or run: exec zsh"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "Dry run complete. Re-run without --dry-run to apply."
+  else
+    ok "Installation complete! Restart your terminal or run: exec zsh"
+  fi
   echo ""
 }
 

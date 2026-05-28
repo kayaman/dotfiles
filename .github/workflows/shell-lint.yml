@@ -30,3 +30,56 @@ jobs:
           SHELLCHECK_OPTS: -e SC1091
         with:
           severity: warning
+          # Exclude the lefthook-generated pre-commit hook — same exclusion
+          # the shfmt job uses, since we don't own its style.
+          ignore_paths: stow/git/.githooks
+
+  syntax:
+    name: bash -n
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash syntax check
+        run: |
+          bash -n install.sh
+          bash -n bootstrap.sh
+          for s in scripts/*.sh; do bash -n "$s"; done
+      - name: zsh syntax check
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y zsh
+          for f in stow/zsh/.zshrc stow/zsh/.functions stow/zsh/.path stow/zsh/functions.d/*.zsh; do
+            zsh -n "$f"
+          done
+
+  install-dry-run:
+    name: install dry-run (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            image: ubuntu:24.04
+            bootstrap: apt-get update -qq && apt-get install -y -qq bash git sudo
+          - distro: fedora
+            image: fedora:latest
+            bootstrap: dnf install -y -q bash git sudo
+          - distro: opensuse
+            image: opensuse/tumbleweed:latest
+            bootstrap: zypper --non-interactive install -y bash git sudo
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: install minimal deps
+        run: ${{ matrix.bootstrap }}
+      - uses: actions/checkout@v4
+      - name: install.sh --dry-run (all components incl. --with claude)
+        run: bash install.sh --dry-run --with claude
+      - name: install.sh --uninstall --dry-run
+        run: bash install.sh --uninstall --dry-run
+      - name: rejects unknown component
+        run: |
+          if bash install.sh --with definitely_not_a_component --dry-run; then
+            echo "Expected failure but install.sh accepted unknown component" >&2
+            exit 1
+          fi

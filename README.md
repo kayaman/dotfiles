@@ -72,6 +72,17 @@ Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.de
 
 Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`. To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh` and guard its install step with `want <name>`.
 
+### Safety flags
+
+```bash
+bash install.sh --dry-run                  # print every step that would run; touch nothing
+bash install.sh --verbose                  # echo every command (set -x) for debugging
+bash install.sh --uninstall                # remove all stow symlinks; print (don't execute)
+                                           #   the commands to uninstall installed tools
+```
+
+`--dry-run` and `--uninstall` compose: `install.sh --uninstall --dry-run` previews removal without touching disk.
+
 ## Structure
 
 ```
@@ -124,6 +135,8 @@ dotfiles/
 | `dot diff` | Uncommitted diff (staged + unstaged) |
 | `dot edit` | Open the dotfiles repo in `$EDITOR` / `code` |
 | `dot cd` | `cd` into the dotfiles directory |
+| `dot doctor` | Health check: stow links, required tools, filter hook, startup time, `dotfiles.toml` |
+| `dot update` | Pull, re-stow every package, then dry-run the installer |
 | `dot config get <section.key>` | Read a value from `dotfiles.toml` |
 | `dot config list [section]` | List keys in a section (or all sections) |
 | `dot config apply` | Export `[secrets]` into the current shell |
