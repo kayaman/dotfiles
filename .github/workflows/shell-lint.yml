@@ -13,8 +13,8 @@ jobs:
     name: shfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: mfinelli/setup-shfmt@v3
+      - uses: actions/checkout@v6
+      - uses: mfinelli/setup-shfmt@v4
       - name: shfmt -d
         # Exclude:
         #   - stow/git/.githooks/ — lefthook-generated, we don't own its style
@@ -28,9 +28,9 @@ jobs:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: shellcheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@2.0.0
         env:
           SHELLCHECK_OPTS: -e SC1091
         with:
@@ -46,7 +46,7 @@ jobs:
     name: bash -n
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: bash syntax check
         run: |
           bash -n install.sh
@@ -80,7 +80,7 @@ jobs:
     steps:
       - name: install minimal deps
         run: ${{ matrix.bootstrap }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: install.sh --dry-run (all components incl. --with claude)
         run: bash install.sh --dry-run --with claude
       - name: install.sh --uninstall --dry-run
