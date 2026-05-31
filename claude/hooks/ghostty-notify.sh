@@ -8,12 +8,12 @@ MSG="${1:-Notification}"
 PID=$$
 TTY=""
 while [ "$PID" != "1" ] && [ -n "$PID" ]; do
-  T=$(ps -o tty= -p "$PID" 2>/dev/null | tr -d ' ')
+  T=$(ps -o tty= -p "$PID" 2> /dev/null | tr -d ' ')
   if [ -n "$T" ] && [ "$T" != "??" ] && [ -e "/dev/$T" ]; then
     TTY="/dev/$T"
     break
   fi
-  PID=$(ps -o ppid= -p "$PID" 2>/dev/null | tr -d ' ')
+  PID=$(ps -o ppid= -p "$PID" 2> /dev/null | tr -d ' ')
 done
 
 if [ -z "$TTY" ]; then
