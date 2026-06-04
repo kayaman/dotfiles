@@ -6,7 +6,28 @@
 # ─────────────────────────────────────────────────────────────
 
 gpg-by-id() {
-        echo "$(gpg --armor --export-options export-minimal --export "$1")" | xclip -sel clip
+        local public_key
+
+        if [[ -z "${1:-}" ]]; then
+                echo "Error: missing GPG key ID." >&2
+                return 1
+        fi
+
+        if ! public_key="$(gpg --armor --export-options export-minimal --export "$1")"; then
+                echo "Error: failed to export GPG public key for '$1'." >&2
+                return 1
+        fi
+
+        if [[ -z "$public_key" ]]; then
+                echo "Error: no GPG public key data was exported for '$1'." >&2
+                return 1
+        fi
+
+        if ! printf '%s' "$public_key" | xclip -sel clip; then
+                echo "Error: failed to copy GPG public key to clipboard." >&2
+                return 1
+        fi
+
         echo "The GPG public key was copied to clipboard"
 }
 
@@ -292,8 +313,8 @@ ship() {
         fi
 
         local current_branch
-        current_branch="$(git rev-parse --abbrev-ref HEAD)"
         # shellcheck disable=SC2034 # current_branch appears unused; left for informational purposes
+        current_branch="$(git rev-parse --abbrev-ref HEAD)"
 
         local latest_tag
         latest_tag="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
@@ -801,8 +822,17 @@ function aliases() {
 }
 
 function ght() {
-        echo $GITHUB_PAT | xclip -sel clip
-        echo "Token copied to clipboard!"
+        if [[ -z "${GITHUB_PAT:-}" ]]; then
+                echo "GITHUB_PAT is not set" >&2
+                return 1
+        fi
+
+        if printf '%s' "$GITHUB_PAT" | xclip -sel clip; then
+                echo "Token copied to clipboard!"
+        else
+                echo "Failed to copy token to clipboard" >&2
+                return 1
+        fi
 }
 
 # ── Kubernetes ───────────────────────────────────────────────
