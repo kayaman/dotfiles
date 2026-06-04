@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    shfmt:
+      tags: shell format
+      glob: "*.sh"
+      run: shfmt -i 2 -ci -bn -sr -d {staged_files}
+      stage_fixed: true
+    shellcheck:
+      tags: shell lint
+      glob: "*.sh"
+      run: shellcheck --severity=warning {staged_files}

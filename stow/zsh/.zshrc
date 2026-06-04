@@ -1,17 +1,37 @@
 #!/usr/bin/env zsh
 
 # ── Profiling Infrastructure ─────────────────────────────────
+# Activated by: ZSH_PROF=1 zsh   or   dot profiler
+# Writes structured timing data to $ZSH_PROF_LOG (tab-separated).
+# Wraps source/. to auto-instrument every sourced file.
 if [[ -n "$ZSH_PROF" ]]; then
     zmodload zsh/datetime
     zsh_start_time=$EPOCHREALTIME
     zsh_last_time=$zsh_start_time
+    : "${ZSH_PROF_LOG:=/tmp/zsh-profile-$$.log}"
+    export ZSH_PROF_LOG
+    : > "$ZSH_PROF_LOG"
+
     log_step() {
         local now=$EPOCHREALTIME
-        local elapsed=$(( now - zsh_start_time ))
-        local delta=$(( now - zsh_last_time ))
-        printf ">> %0.4fs (+%0.4fs) %s\n" $elapsed $delta "$1"
+        local delta=$(( (now - zsh_last_time) * 1000 ))
+        local elapsed=$(( (now - zsh_start_time) * 1000 ))
+        printf "%0.2f\t%0.2f\t%s\n" "$elapsed" "$delta" "$1" >> "$ZSH_PROF_LOG"
         zsh_last_time=$now
     }
+
+    # Wrap source/. to auto-log every sourced file
+    _prof_source() {
+        local _pf="$1"
+        local _pl="${_pf/$HOME/~}"
+        log_step "source:begin $_pl"
+        builtin source "$@"
+        local _rc=$?
+        log_step "source:end   $_pl"
+        return $_rc
+    }
+    alias source='_prof_source'
+    alias .='_prof_source'
 else
     log_step() { :; }
 fi
@@ -21,13 +41,17 @@ log_step "Starting .zshrc"
 # ── Oh My Zsh ────────────────────────────────────────────────
 export ZSH="$HOME/.oh-my-zsh"
 
-ZSH_THEME="bira"
+ZSH_THEME=""
 
 plugins=(
     git
     zsh-autosuggestions
     zsh-syntax-highlighting
 )
+
+# Render git_prompt_info synchronously so the branch shows on the very
+# first prompt (OMZ defaults to async, which only populates after a redraw).
+zstyle ':omz:alpha:lib:git' async-prompt no
 
 if [[ -d "$ZSH/custom/plugins/zsh-completions" ]]; then
     plugins+=(zsh-completions)
@@ -38,6 +62,18 @@ fi
 log_step "Loading Oh My Zsh"
 source "$ZSH/oh-my-zsh.sh"
 log_step "Oh My Zsh loaded"
+
+# ── zsh-syntax-highlighting: explicit styles ──────────────────
+# Defaults set only [arg0]=fg=green (no bold), which is invisible on many themes.
+typeset -gA ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[arg0]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_command]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_alias]='fg=cyan,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_builtin]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_function]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[arg0_precommand]='fg=green,bold,underline'
+ZSH_HIGHLIGHT_STYLES[arg0_hashed-command]='fg=green,bold'
+ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=red,bold'
 
 # ── Custom config ─────────────────────────────────────────────
 if [[ -z "${DOTFILES:-}" ]]; then
@@ -52,7 +88,13 @@ fi
 export DOTFILES
 
 source_if_exists() {
-    [[ -s "$1" ]] && . "$1"
+    [[ -s "$1" ]] || return 0
+    # LOCAL_OPTIONS reverts any shell options the file changes (e.g. a stray
+    # `set -e`) when this function returns, so a buggy sourced file can't abort
+    # the rest of init; `return 0` keeps a non-zero exit from propagating.
+    setopt local_options
+    . "$1"
+    return 0
 }
 
 log_step "Sourcing env/aliases/functions"
@@ -70,10 +112,24 @@ if [[ -d "$DOTFILES/snippets" ]]; then
     done
 fi
 
-export PATH=$PATH:/home/kayaman/.local/bin
+# ── GPG TTY ──────────────────────────────────────────────────
+if [[ -t 0 ]]; then
+    _gpg_tty=$(tty 2>/dev/null) && export GPG_TTY="$_gpg_tty"
+    unset _gpg_tty
+fi
 
-# ── Starship prompt (Removed) ─────────────────────────────────
-export GPG_TTY=$(tty)
+# ── Prompt (two-line, OMZ-powered, no external prompt manager) ──
+# git_prompt_info comes from OMZ's lib/git.zsh and is available
+# regardless of ZSH_THEME — so we set ZSH_THEME="" above and drive
+# PROMPT ourselves.
+ZSH_THEME_GIT_PROMPT_PREFIX="%F{8}on%f %F{magenta}  "
+ZSH_THEME_GIT_PROMPT_SUFFIX="%f "
+ZSH_THEME_GIT_PROMPT_DIRTY=" %F{yellow}!%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+PROMPT='%F{8}╭─%f %F{cyan}%n%f%F{8}@%f%F{cyan}%m%f  %F{blue}%~%f $(git_prompt_info)
+%F{8}╰─%f %(?.%F{green}.%F{red})❯%f '
+RPROMPT='%F{8}%*%f'
 
 # ── NVM (Lazy Load Optimization) ──────────────────────────────
 log_step "NVM setup (lazy)"
@@ -90,14 +146,37 @@ npm()  { load_nvm; npm "$@"; }
 npx()  { load_nvm; npx "$@"; }
 
 # ── External Tools ────────────────────────────────────────────
-# The next line updates PATH for the Google Cloud SDK.
-log_step "GCloud SDK"
-if [ -f '/home/kayaman/google-cloud-sdk/path.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/kayaman/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/completion.zsh.inc'; fi
-
 log_step "Flutter"
-export PATH="$HOME/development/flutter/bin:$PATH"
+_add_to_path "$HOME/development/flutter/bin"
+
+# Bun — PATH is already added by .path. The completion file is heavy
+# (compdef machinery), so it loads on first `bun`/`bunx` invocation.
+log_step "Bun (lazy completion)"
+export BUN_INSTALL="$HOME/.bun"
+if [ -x "$BUN_INSTALL/bin/bun" ] && [ -s "$BUN_INSTALL/_bun" ]; then
+    bun()  { unset -f bun bunx; source "$BUN_INSTALL/_bun"; bun "$@"; }
+    bunx() { unset -f bun bunx; source "$BUN_INSTALL/_bun"; bunx "$@"; }
+fi
+
+# GCloud — path.zsh.inc and completion.zsh.inc together add ~50ms.
+# Stubs only exist if the SDK is actually installed locally.
+log_step "GCloud (lazy)"
+if [ -d "$HOME/google-cloud-sdk" ]; then
+    load_gcloud() {
+        log_step "Loading GCloud (first use)"
+        unset -f gcloud gsutil bq load_gcloud
+        [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
+        [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
+    }
+    gcloud() { load_gcloud; gcloud "$@"; }
+    gsutil() { load_gcloud; gsutil "$@"; }
+    bq()     { load_gcloud; bq "$@"; }
+fi
 
 log_step "Finished .zshrc"
+
+# ── Profiling Cleanup ─────────────────────────────────────────
+if [[ -n "$ZSH_PROF" ]]; then
+    unalias source 2>/dev/null
+    unalias . 2>/dev/null
+fi

@@ -65,6 +65,7 @@ alias df='df -h'
 alias du='du -sh'
 alias free='free -h'
 alias j='jobs -l'
+alias ping='ping -c 5'
 
 # ── Misc ─────────────────────────────────────────────────────
 alias timestamp='date +%Y-%m-%dT%H:%M:%S'
@@ -78,11 +79,6 @@ alias dcdown='docker compose down'
 alias dcs='docker container stop'
 alias dcr='docker container rm'
 
-# ── Antigravity ──────────────────────────────────────────────
-alias agy='agy .'
-alias ags='antigravity-usage'
-alias quota='antigravity-usage'
-
 alias tf='terraform'
 
 alias gpgls='gpg --list-secret-keys --keyid-format=long'
@@ -90,3 +86,5 @@ alias gpgls='gpg --list-secret-keys --keyid-format=long'
 
 alias pb='cd "$HOME/Projects/blogmarks"'
 alias pm='cd "$HOME/Projects/magj-dev"'
+
+alias suclaude='claude --dangerously-skip-permissions -w'

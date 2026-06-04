@@ -1,0 +1,12 @@
+# Alacritty configuration
+# Reference: https://alacritty.org/config-alacritty.html
+
+[window]
+padding = { x = 4, y = 4 }
+decorations = "none"
+
+[font]
+size = 14.5
+
+[scrolling]
+history = 10000

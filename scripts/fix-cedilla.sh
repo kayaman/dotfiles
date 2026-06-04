@@ -19,7 +19,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-ok()   { echo -e "${GREEN}[OK]${NC}    $*"; }
+ok() { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 
@@ -30,16 +30,16 @@ XCOMPOSE_BLOCK='# Fix dead_acute + c/C → ç/Ç (Brazilian Portuguese on US key
 <dead_acute> <C> : "Ç" Ccedilla'
 
 if [[ -L "$XCOMPOSE" ]]; then
-    ok ".XCompose is a symlink (managed by stow)"
-elif grep -qF 'ccedilla' "$XCOMPOSE" 2>/dev/null; then
-    ok ".XCompose already contains cedilla overrides"
+  ok ".XCompose is a symlink (managed by stow)"
+elif grep -qF 'ccedilla' "$XCOMPOSE" 2> /dev/null; then
+  ok ".XCompose already contains cedilla overrides"
 else
-    if [[ ! -f "$XCOMPOSE" ]]; then
-        printf 'include "%%L"\n\n%s\n' "$XCOMPOSE_BLOCK" > "$XCOMPOSE"
-    else
-        printf '\n%s\n' "$XCOMPOSE_BLOCK" >> "$XCOMPOSE"
-    fi
-    ok ".XCompose updated"
+  if [[ ! -f "$XCOMPOSE" ]]; then
+    printf 'include "%%L"\n\n%s\n' "$XCOMPOSE_BLOCK" > "$XCOMPOSE"
+  else
+    printf '\n%s\n' "$XCOMPOSE_BLOCK" >> "$XCOMPOSE"
+  fi
+  ok ".XCompose updated"
 fi
 
 # --- environment.d -----------------------------------------------------------
@@ -47,13 +47,13 @@ ENV_DIR="$HOME/.config/environment.d"
 ENV_FILE="$ENV_DIR/cedilla.conf"
 
 if [[ -L "$ENV_FILE" ]]; then
-    ok "environment.d/cedilla.conf is a symlink (managed by stow)"
+  ok "environment.d/cedilla.conf is a symlink (managed by stow)"
 elif [[ -f "$ENV_FILE" ]] && grep -q 'GTK_IM_MODULE=cedilla' "$ENV_FILE"; then
-    ok "environment.d/cedilla.conf already configured"
+  ok "environment.d/cedilla.conf already configured"
 else
-    mkdir -p "$ENV_DIR"
-    printf 'GTK_IM_MODULE=cedilla\nQT_IM_MODULE=cedilla\n' > "$ENV_FILE"
-    ok "environment.d/cedilla.conf created"
+  mkdir -p "$ENV_DIR"
+  printf 'GTK_IM_MODULE=cedilla\nQT_IM_MODULE=cedilla\n' > "$ENV_FILE"
+  ok "environment.d/cedilla.conf created"
 fi
 
 echo ""

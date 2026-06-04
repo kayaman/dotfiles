@@ -3,9 +3,9 @@
 
 [git]
 # Global git configuration used by scripts/setup-git.sh
-name = "Marco Antonio Gonzalez Junior"
-email = "m@rco.sh"
-signingkey = "5A033DAE3AAB812E"
+name = "Your Name"
+email = "you@example.com"
+signingkey = "<your-gpg-key-id>"
 
 [secrets]
 # Environment variables exported to every shell session
@@ -13,12 +13,11 @@ signingkey = "5A033DAE3AAB812E"
 # OPENAI_API_KEY = "your_encrypted_openai_key"
 
 [features]
-# Toggle specific setup logic (optional)
-# enable_docker = true
+# Illustrative placeholders — not yet read by any setup script.
 # enable_kubernetes = false
 
 [snippets]
-# Control which snippets from the snippets/ directory are loaded
-# If not specified, all will be loaded by default.
+# Illustrative — every snippets/*.sh is currently sourced unconditionally
+# (see .zshrc); the per-snippet toggle is not yet honored.
 # nvm = true
 # bun = true

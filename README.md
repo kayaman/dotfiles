@@ -1,13 +1,13 @@
 # dotfiles
 
-A clean, modern **Zsh** setup with **Oh My Zsh** and **Starship** prompt, tailored for developers.
+A clean, modern **Zsh** setup with **Oh My Zsh** and a custom two-line prompt, tailored for developers.
 
-Supports **Linux (openSUSE Tumbleweed / Ubuntu)** and **WSL**.
+Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
 
 ## Features
 
 - **Shell:** Zsh + Oh My Zsh
-- **Prompt:** [Starship](https://starship.rs)
+- **Prompt:** custom two-line PROMPT in `.zshrc` (uses OMZ's `git_prompt_info`; no external prompt manager)
 - **Plugins:** `zsh-autosuggestions`, `zsh-syntax-highlighting`, `zsh-completions`
 - **Modern CLI Tools:**
   - [eza](https://eza.rocks) (better `ls`)
@@ -16,20 +16,21 @@ Supports **Linux (openSUSE Tumbleweed / Ubuntu)** and **WSL**.
   - [ripgrep](https://github.com/BurntSushi/ripgrep) (better `grep`)
   - [fd](https://github.com/sharkdp/fd) (better `find`)
   - [delta](https://github.com/dandavison/delta) (better `git diff`)
-- **Development Managers:** `nvm` (Node), `pyenv` (Python), `uv` (Python), `rustup` (Rust)
-- **Containers:** Podman, Buildah, Distrobox, Docker (on Native Linux)
+- **Development Managers:** `nvm` (Node), `uv` (Python), `rustup` (Rust)
+- **DevOps:** [gh](https://cli.github.com) (GitHub CLI), [terraform](https://www.terraform.io), [aws-cli](https://aws.amazon.com/cli/) v2
+- **Containers:** Podman + podman-compose + podman-docker on all Linux targets; Buildah + Distrobox on openSUSE/Fedora (`docker` resolves to Podman via the `podman-docker` shim)
+
+> Note: Zed editor is x86_64-only on Linux and is automatically skipped on ARM (Raspberry Pi).
 
 ## Installation
 
 ### One-liner (recommended)
 
-Automatically detects WSL vs. native Linux and runs the right installer:
-
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/kayaman/dotfiles/main/bootstrap.sh)
+bash <(curl -fsSL https://dot.ai-assisted.dev)
 ```
 
-The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs the appropriate installer. If the repo is already present it pulls the latest changes instead of re-cloning.
+The bootstrap script clones the repo to `~/Projects/dotfiles` (override with `DOTFILES_DIR=~/your/path`) and runs `install.sh`. If the repo is already present it pulls the latest changes instead of re-cloning. The short URL is served via CloudFront — see [`terraform/`](terraform/) for the infrastructure.
 
 ### Manual installation
 
@@ -40,41 +41,69 @@ git clone https://github.com/kayaman/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
-#### Native Linux (openSUSE / Ubuntu)
+#### Native Linux (openSUSE / Ubuntu / Fedora)
 
-Installs the full suite of CLI tools, dev environments, and container engines (Podman & Docker).
+Installs the full suite of CLI tools, dev environments, and container engines (Podman + podman-compose + podman-docker, plus Buildah + Distrobox on openSUSE/Fedora).
 
 ```bash
 bash install.sh
 ```
 
-#### WSL (Windows Subsystem for Linux)
+#### Raspberry Pi OS (64-bit)
 
-A slimmer installation for WSL environments. Supports both **Ubuntu/Debian** and **openSUSE** in WSL. Skips desktop-specific components and container daemons.
+Same installer as native Linux — Pi is detected automatically via `/proc/device-tree/model`. Architecture-specific downloads (e.g. SOPS) and ARM-incompatible tools (Zed) are handled.
 
 ```bash
-bash wsl/install.sh
+bash install.sh
 ```
+
+### Selecting components
+
+The installer installs everything by default **except** Claude Code, which is opt-in. Use `--with` / `--without` to override:
+
+```bash
+bash install.sh --with claude              # also install the Claude CLI + config
+bash install.sh --without podman           # skip Podman and friends
+bash install.sh --with claude --without chrome,vscode
+bash install.sh --help                     # list all components and their defaults
+```
+
+Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.dev) --with claude`. Names may be comma-separated or the flag repeated.
+
+Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`. To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh` and guard its install step with `want <name>`.
+
+### Safety flags
+
+```bash
+bash install.sh --dry-run                  # print every step that would run; touch nothing
+bash install.sh --verbose                  # echo every command (set -x) for debugging
+bash install.sh --uninstall                # remove all stow symlinks; print (don't execute)
+                                           #   the commands to uninstall installed tools
+```
+
+`--dry-run` and `--uninstall` compose: `install.sh --uninstall --dry-run` previews removal without touching disk.
 
 ## Structure
 
 ```
 dotfiles/
 ├── bootstrap.sh                  # One-liner bootstrap: clones repo and runs the right installer
-├── install.sh                    # Main installer for Native Linux (openSUSE/Ubuntu)
-├── wsl/
-│   └── install.sh                # Dedicated installer for WSL
+├── install.sh                    # Installer for Native Linux (openSUSE/Ubuntu/Fedora)
 ├── stow/                         # Stow packages — each is symlinked into $HOME
 │   ├── zsh/                      # .zshrc, .aliases, .functions, .path
 │   ├── git/                      # .gitconfig, .gitignore_global
-│   ├── starship/                 # .config/starship.toml
 │   ├── ripgrep/                  # .config/ripgrep/config
 │   ├── readline/                 # .inputrc
 │   ├── tree/                     # .treeglobal (global ignore patterns for tree)
 │   ├── kitty/                    # .config/kitty/kitty.conf
 │   ├── keyd/                     # .config/keyd/default.conf
-│   └── ghostty/                  # .config/ghostty/config
+│   ├── ghostty/                  # .config/ghostty/config
+│   ├── xcompose/                 # .XCompose (cedilla fix on US keyboard)
+│   ├── cedilla/                  # .config/environment.d/cedilla.conf (GTK/Qt cedilla input module)
+│   ├── tmux/                     # .config/tmux/tmux.conf (prefix: C-a)
+│   └── vim/                      # .vimrc
 ├── snippets/                     # Additional shell scripts auto-sourced by .zshrc
+├── claude/                       # Curated ~/.claude config (settings, hooks, skills)
 ├── scripts/                      # Setup scripts
 └── README.md
 ```
@@ -91,12 +120,42 @@ dotfiles/
   ```
   **Advanced**: For encrypted secrets, create `dotfiles.sops.toml` and encrypt it using [SOPS](https://github.com/getsops/sops). If present, it will take precedence and securely decrypt values on-the-fly. Values in the `[secrets]` section are automatically exported as environment variables.
 - **Environment**: Use `.env` or `.env.sh` (ignored by git) in your home directory for machine-specific secrets and tokens not managed via SOPS.
+- **Claude Code config**: A curated slice of `~/.claude` (`settings.json`, `hooks/`, `skills/`) is versioned under `claude/`. After changing your Claude setup, capture it with `./scripts/claude-sync.sh backup` and commit. On a new machine, run the installer with `--with claude` to install the Claude CLI and restore this config automatically (or run `./scripts/claude-sync.sh restore` directly), reinstalling marketplaces and enabled plugins from `settings.json`. Login tokens (`.credentials.json`) are intentionally **not** synced — run `claude` to authenticate.
+
+## The `dot` command
+
+`dot` is a Zsh function (defined in `stow/zsh/.functions`, available after install) that manages the dotfiles repo and its config/secrets. Run `dot help` for the authoritative list — the commands below mirror it.
+
+| Command | Description |
+| --- | --- |
+| `dot sync [msg]` | Commit local changes, `pull --rebase`, then push |
+| `dot push [msg]` | Commit all changes and push to origin |
+| `dot pull` | Pull from origin and re-apply stow links |
+| `dot status` | `git status` plus ahead/behind origin |
+| `dot diff` | Uncommitted diff (staged + unstaged) |
+| `dot edit` | Open the dotfiles repo in `$EDITOR` / `code` |
+| `dot cd` | `cd` into the dotfiles directory |
+| `dot doctor` | Health check: stow links, required tools, filter hook, startup time, `dotfiles.toml` |
+| `dot update` | Pull, re-stow every package, then dry-run the installer |
+| `dot config get <section.key>` | Read a value from `dotfiles.toml` |
+| `dot config list [section]` | List keys in a section (or all sections) |
+| `dot config apply` | Export `[secrets]` into the current shell |
+| `dot filter-install` | Register the git clean filter on this machine |
+| `dot filter-show` | List active `.dotfilter` patterns |
+| `dot filter-add <pattern>` | Append an ERE pattern to `.dotfilter` |
+| `dot check` | Dry-run: show lines that would be redacted |
+| `dot profiler [--raw]` | Profile shell startup time (slowest-first) |
+
+### Secret redaction (`.dotfilter`)
+
+Add ERE patterns (one per line) to `$DOTFILES/.dotfilter`. At `git add` time, lines matching any pattern are replaced with a redaction marker **in the git index only** — working-tree files are never modified, so your real secrets stay usable locally while staying out of commits. Run `dot filter-install` once per machine to activate the filter.
 
 ## After Installation
 
 1. Restart your terminal or run `exec zsh`.
-2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render Starship prompt symbols.
+2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render prompt symbols.
 3. Configure your Git user and GPG signing preferences by running:
    ```bash
    ./scripts/setup-git.sh
    ```
+4. If you keep secrets in `dotfiles.toml`, run `dot filter-install` once on this machine to activate the secret-redaction git filter before committing. Use `dot config apply` to export `[secrets]` into your shell.

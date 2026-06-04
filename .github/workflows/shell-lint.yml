@@ -1,0 +1,93 @@
+name: shell-lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shfmt:
+    name: shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: mfinelli/setup-shfmt@v4
+      - name: shfmt -d
+        # Exclude:
+        #   - stow/git/.githooks/ — lefthook-generated, we don't own its style
+        #   - stow/zsh/           — zsh files; shfmt is a bash formatter and
+        #                           misparses zsh-specific syntax (e.g. ${!arr[@]},
+        #                           parameter modifiers). The `syntax` job below
+        #                           runs `zsh -n` on these instead.
+        run: shfmt -i 2 -ci -bn -sr -d $(shfmt -f . | grep -vE '^(stow/git/\.githooks/|stow/zsh/)')
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        env:
+          SHELLCHECK_OPTS: -e SC1091
+        with:
+          severity: warning
+          # Exclude:
+          #   - stow/git/.githooks — lefthook-generated, we don't own its style
+          #   - stow/zsh           — zsh files; shellcheck is a bash linter and
+          #                          flags zsh-only constructs as errors. The
+          #                          `syntax` job runs `zsh -n` on these instead.
+          ignore_paths: stow/git/.githooks stow/zsh
+
+  syntax:
+    name: bash -n
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: bash syntax check
+        run: |
+          bash -n install.sh
+          bash -n bootstrap.sh
+          for s in scripts/*.sh; do bash -n "$s"; done
+      - name: zsh syntax check
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y zsh
+          for f in stow/zsh/.zshrc stow/zsh/.functions stow/zsh/.path stow/zsh/functions.d/*.zsh; do
+            zsh -n "$f"
+          done
+
+  install-dry-run:
+    name: install dry-run (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            image: ubuntu:24.04
+            bootstrap: apt-get update -qq && apt-get install -y -qq bash git sudo
+          - distro: fedora
+            image: fedora:latest
+            bootstrap: dnf install -y -q bash git sudo
+          - distro: opensuse
+            image: opensuse/tumbleweed:latest
+            bootstrap: zypper --non-interactive install -y bash git sudo
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: install minimal deps
+        run: ${{ matrix.bootstrap }}
+      - uses: actions/checkout@v6
+      - name: install.sh --dry-run (all components incl. --with claude)
+        run: bash install.sh --dry-run --with claude
+      - name: install.sh --uninstall --dry-run
+        run: bash install.sh --uninstall --dry-run
+      - name: rejects unknown component
+        run: |
+          if bash install.sh --with definitely_not_a_component --dry-run; then
+            echo "Expected failure but install.sh accepted unknown component" >&2
+            exit 1
+          fi

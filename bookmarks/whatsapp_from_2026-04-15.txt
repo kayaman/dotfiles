@@ -1,0 +1,264 @@
+Message yourself
+
+193 kB
+01:32
+3/30/2026
+
+Databricks (@databricks) on X
+Data engineering is getting more complex, but it doesn't have to slow you down. The Big Book of Data Engineering is a practical guide packed with how-tos, code snippets, and real-world examples to help you build and scale pipelines faster and deliver high-quality data for AI,
+share.google
+Data engineering is getting more complex, but it doesn't have to slow you down. 
+
+The Big Book of Data Engineering is a practical guide packed with how-tos, code snippets, and real-world examples to help you build and scale pipelines faster and deliver high-quality data for AI, BI, and analytics workloads. 
+
+Inside: 
+Patterns for scaling ETL pipelines effectively
+Orchestrating data, analytics, and AI workloads
+Implementing observability for your data pipelines
+Using Lakeflow to manage pipelines
+
+databricks.com/resources/eboo https://share.google/t2TGJY5WK291Yk6K4
+01:51
+https://www.marktechpost.com/2026/03/28/a-coding-guide-to-exploring-nanobots-full-agent-pipeline-from-wiring-up-tools-and-memory-to-skills-subagents-and-cron-scheduling/
+02:06
+
+Daily Dose of Data Science (Page 1)
+www.dailydoseofds.com
+https://www.dailydoseofds.com/membership/
+02:10
+3/31/2026
+
+66 kB
+12:22
+
+On the pleasures and dangers of open source Python
+Several of this week’s top stories touch on the pitfalls of open source development, especially when things like power, money, and ego are involved. Also, a look at Python’s nifty new sampling profiler, and a play-by-play account of using Qwen3.5 on a Python project.
+share.google
+Source: InfoWorld
+ https://share.google/j7jNL78mJkobple8S
+13:57
+4/5/2026
+LLMOps in 2026: The 10 Tools Every Team Must Have - KDnuggets
+Don’t deploy another model until you check out these essential 2026 LLMOps tools.
+share.google
+Source: KDnuggets
+ https://share.google/J3N2talWUiQU1MsDO
+05:38
+
+The cognitive impact of coding agents
+A fun thing about recording a podcast with a professional like Lenny Rachitsky is that his team know how to slice the resulting video up into TikTok-sized short form vertical …
+share.google
+Source: Simon Willison’s Weblog
+ https://share.google/MdT9DJF7Vz7N4QoBj
+05:39
+4/6/2026
+https://musicforprogramming.net/latest/
+09:03
+4/8/2026
+
+USB for Software Developers | WerWolv
+A basic introduction to USB for people that don't need to know what happens on the wire
+werwolv.net
+https://werwolv.net/posts/usb_for_sw_devs/
+22:33
+4/9/2026
+
+llm-wiki
+llm-wiki. GitHub Gist: instantly share code, notes, and snippets.
+gist.github.com
+https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6079549
+00:49
+4/12/2026
+How to Build a Secure Local-First Agent Runtime with OpenClaw Gateway, Skills, and Controlled Tool Execution
+How to Build a Secure Local-First Agent Runtime with OpenClaw Gateway, Skills, and Controlled Tool Execution
+share.google
+Source: MarkTechPost
+ https://share.google/mIa2BLrpdfS3tDIOg
+17:00
+
+A Coding Guide to Build Advanced Document Intelligence Pipelines with Google LangExtract, OpenAI Models, Structured Extraction, and Interactive Visualization
+Build Advanced Document Intelligence Pipelines with Google LangExtract, OpenAI Models, Structured Extraction, and Interactive Visualization
+share.google
+Source: MarkTechPost
+ https://share.google/dAKC2ndPGqMtF34NR
+20:37
+4/15/2026
+Dockerfile
+TXT•141 B
+13:56
+"""
+Sabesp KPI Bot - Lógica principal
+===================================
+Gerencia o fluxo de Adaptive Cards no Teams:
+Exibe card de seleção de KPI (entrada)
+Recebe a seleção do executivo
+Consulta o Genie MCP Server
+Retorna card com o resultado do KPI (saída)
+"""
+
+import json
+
+from botbuilder.core import ActivityHandler, CardFactory, MessageFactory, TurnContext
+from botbuilder.schema import (
+    Activity,
+    ActivityTypes,
+    Attachment,
+    HeroCard,
+)
+
+from adaptive_cards import build_welcome_card, build_kpi_selector_card, build_loading_card
+from mcp_client import GenieMcpClient
+
+
+class KpiBot(ActivityHandler):
+    """Bot que serve KPIs da Sabesp via Adaptive Cards."""
+
+    def _init_(self, mcp_client: GenieMcpClient):
+        self._mcp = mcp_client… Read more
+14:38
+"""
+MCP Client para o Genie MCP Server
+====================================
+Encapsula a conexão MCP e expõe métodos tipados para o bot consumir.
+"""
+
+import json
+from typing import Any
+
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+
+class GenieMcpClient:
+    """Cliente MCP que se conecta ao Genie MCP Server."""
+
+    def _init_(self, server_url: str):
+        self._url = server_url
+        self._session: ClientSession | None = None
+        self._read = None
+        self._write = None
+        self._cm = None  # context manager do transport
+
+    async def connect(self):
+        """Estabelece conexão com o MCP Server."""
+        self._cm = streamablehttp_client(self._url)
+        self.read, self._write, _ = await sel… Read more
+14:43
+# Sabesp KPI Bot
+
+Bot do Microsoft Teams que consulta KPIs da Sabesp em tempo real via Databricks Genie, usando MCP como camada de integração.
+
+## Arquitetura
+
+
+Teams
+  │  Adaptive Card (seleção do KPI)
+  ▼
+Azure Bot Service
+  │
+  ▼
+┌──────────────────────────────┐
+│  sabesp-kpi-bot (este repo)  │
+│  App Service / Container     │
+│                              │
+│  app.py        → entrypoint  │
+│  bot.py        → lógica      │
+│  mcp_client.py → MCP client  │
+│  adaptive_cards.py → cards   │
+└──────────┬───────────────────┘
+           │ MCP protocol (HTTP)
+           ▼
+┌──────────────────────────────┐
+│  genie-mcp-server            │
+│  (FastMCP / streamable HTTP) │
+└──────────┬───────────────────┘
+           │ REST API
+           ▼
+     Databricks Genie Spa… Read more
+14:44
+817939C603_893935280_817939_2026_03-BOLETO.pdf
+1 page•PDF•65 kB
+17:05
+4/18/2026
+Source: GitHub
+ https://github.com/poteto/how
+14:52
+Source: cio.com
+ https://share.google/aqzak3Zy3JPPlUQFJ
+14:54
+Source: Maven Learning
+ https://share.google/PMTdqarWkMUiDbGP3
+14:55
+
+6 Things I Learned Building LLMs From Scratch That No Tutorial Teaches You | Towards Data Science
+From rank-stabilized scaling to quantization stability: A statistical and architectural deep dive into the optimizations powering modern Transformers.
+share.google
+6 Things I Learned Building LLMs From Scratch That No Tutorial Teaches You | Towards Data Science https://share.google/8HR4jyDkH1z7aJoCH
+15:50
+4/19/2026
+Langgraph MCP Tool Calling Agent - Databricks
+docs.databricks.com
+https://docs.databricks.com/aws/en/notebooks/source/generative-ai/langgraph-mcp-tool-calling-agent.html
+23:25
+4/20/2026
+aws secretsmanager create-secret \
+--name cds/portal-transparencia-token \
+--secret-string "03684e0c052ad1b11d70c5d44f7bb1f7" \
+--region us-east-1
+22:31
+4/23/2026
+bm_v1_Em2JXGys16gUyeX5baOOZxeOdT_16DB23P_D5iINuwE
+23:56
+{
+  "mcpServers": {
+    "blogmarks": {
+      "type": "http",
+      "url": "https://api.blogmarks.dev/mcp/v1",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
+    }
+  }
+}
+23:57
+4/28/2026
+Structured-Prompt-Driven Development (SPDD)
+share.google
+Source: martinfowler.com
+ https://share.google/1tGdehSZgrZVHFsMJ
+21:11
+4/29/2026
+
+Agentic Data Engineering with Genie Code and Lakeflow
+Learn how Genie Code helps you automate your data engineering workflows, from pipeline development to orchestration.
+www.databricks.com
+https://www.databricks.com/blog/agentic-data-engineering-genie-code-and-lakeflow
+13:57
+Forwarded
+PROCURAÇÃO - MARCO ANTONIO GONZALEZ JUNIOR.DOC.rtf
+RTF•48 kB
+14:13
+4/30/2026
+5/1/2026
+20:46
+20:46
+20:47
++3
+5/3/2026
+18:06
+18:12
+18:14
++3
+5/6/2026
+5/7/2026
+5/8/2026
+5/9/2026
+5/10/2026
+5/11/2026
+5/12/2026
+5/14/2026
+5/15/2026
+Friday
+Saturday
+Yesterday
+Today
