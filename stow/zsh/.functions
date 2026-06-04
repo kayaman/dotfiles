@@ -584,10 +584,16 @@ dot() {
                 echo -e "$_ok Pull complete."
                 if command -v stow &>/dev/null && [[ -d "$DOTFILES/stow" ]]; then
                         echo -e "$_info Re-applying stow links..."
-                        (cd "$DOTFILES" && stow --dir="$DOTFILES/stow" --target="$HOME" \
-                                --restow "$(ls stow)" 2>/dev/null) &&
-                                echo -e "$_ok Stow links updated." ||
+                        local _stow_failed=0
+                        for _pkg in "$DOTFILES"/stow/*/; do
+                                stow --dir="$DOTFILES/stow" --target="$HOME" \
+                                        -R "${_pkg##"$DOTFILES/stow/"}" 2>/dev/null || _stow_failed=1
+                        done
+                        if ((_stow_failed)); then
                                 echo -e "${_y}[WARN]${_n}  stow failed; run install.sh manually."
+                        else
+                                echo -e "$_ok Stow links updated."
+                        fi
                 fi
                 ;;
 
@@ -668,12 +674,15 @@ dot() {
                         "exec sed -E \"\$sed_expr\"" \
                         >"$filter_script"
                 chmod +x "$filter_script"
-                (
-                        cd "$DOTFILES" || return
+                if ! (
+                        cd "$DOTFILES" || exit 1
                         git config filter.dot-secrets.clean "$filter_script"
                         git config filter.dot-secrets.smudge "cat"
                         git config filter.dot-secrets.required false
-                )
+                ); then
+                        echo -e "${_err} Failed to configure git filter in $DOTFILES" >&2
+                        return 1
+                fi
                 local gitattributes="$DOTFILES/.gitattributes"
                 if ! grep -q "dot-secrets" "$gitattributes" 2>/dev/null; then
                         echo "* filter=dot-secrets" >>"$gitattributes"
@@ -854,6 +863,14 @@ function backup() {
 # Create a data URL from a file
 function dataurl() {
         local mimeType
+        if [[ ! -e "$1" ]]; then
+                echo "dataurl: file not found: $1" >&2
+                return 1
+        fi
+        if [[ ! -r "$1" ]]; then
+                echo "dataurl: file not readable: $1" >&2
+                return 1
+        fi
         mimeType=$(file -b --mime-type "$1")
         if [[ $mimeType == text/* ]]; then
                 mimeType="${mimeType};charset=utf-8"
