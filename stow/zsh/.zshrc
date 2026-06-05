@@ -147,7 +147,7 @@ npx()  { load_nvm; npx "$@"; }
 
 # ── External Tools ────────────────────────────────────────────
 log_step "Flutter"
-_add_to_path "$HOME/development/flutter/bin"
+_add_to_path "$HOME/flutter/bin"
 
 # Bun — PATH is already added by .path. The completion file is heavy
 # (compdef machinery), so it loads on first `bun`/`bunx` invocation.
@@ -180,3 +180,21 @@ if [[ -n "$ZSH_PROF" ]]; then
     unalias source 2>/dev/null
     unalias . 2>/dev/null
 fi
+
+# ── Bun ───────────────────────────────────────────────────────
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/kayaman/google-cloud-sdk/path.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/kayaman/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/kayaman/google-cloud-sdk/completion.zsh.inc'; fi
+
+# ── ESP-IDF ───────────────────────────────────────────────────
+# Activate the ESP-IDF v6.0.1 environment on demand (don't auto-source:
+# export.sh mutates PATH and is meant to be loaded per-shell when needed).
+alias get_idf='. $HOME/esp/esp-idf/export.sh'
+export PATH=$PATH:/home/kayaman/.platformio/penv/bin
+
