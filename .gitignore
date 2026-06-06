@@ -17,3 +17,7 @@ terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/.terraform.lock.hcl
+
+# AppImage extractions / binaries (never belong in dotfiles)
+squashfs-root/
+*.AppImage
