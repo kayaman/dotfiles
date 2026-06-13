@@ -82,6 +82,7 @@ dot() {
         "cd" "cd into the dotfiles directory" \
         "doctor" "Run health checks against the local install" \
         "update" "Pull, re-stow, and dry-run the installer" \
+        "gpg-sync" "Regenerate ~/.config/git/local.gitconfig from your GPG key" \
         "filter-show" "List active .dotfilter patterns" \
         "filter-add <p>" "Append an ERE pattern to .dotfilter" \
         "filter-install" "Register git clean filter on this machine" \
@@ -210,6 +211,21 @@ dot() {
 
     update)
       _dot_update "$DOTFILES"
+      ;;
+
+    gpg-sync)
+      if [[ -x "$DOTFILES/scripts/git-signingkey.sh" ]]; then
+        "$DOTFILES/scripts/git-signingkey.sh" --write \
+          && echo -e "$_ok Signing key synced." \
+          || {
+            echo -e "$_err Could not resolve a signing key." >&2
+            echo -e "$_info Pin one: set [git] signingkey in dotfiles.toml" >&2
+            return 1
+          }
+      else
+        echo -e "$_err scripts/git-signingkey.sh not found." >&2
+        return 1
+      fi
       ;;
 
     filter-show)
@@ -591,16 +607,15 @@ _dot_doctor() {
     _check "zsh startup ($ms ms)" false "above 1s — run: dot profiler"
   fi
 
-  # 5. dotfiles.toml parses (if present).
-  if [[ -f "$DOTFILES/dotfiles.toml" ]]; then
-    if _dot_toml_get "$DOTFILES/dotfiles.toml" git signingkey > /dev/null 2>&1 \
-      || grep -qE '^\[' "$DOTFILES/dotfiles.toml"; then
-      _check "dotfiles.toml" true
-    else
-      _check "dotfiles.toml" warn "no recognizable [section] headers"
-    fi
+  # 5. GPG signing key resolves and is present in the local keyring.
+  local sk
+  sk=$(git config user.signingkey 2> /dev/null)
+  if [[ -z "$sk" ]]; then
+    _check "git signing key" warn "user.signingkey unset — run: dot gpg-sync"
+  elif command -v gpg > /dev/null 2>&1 && gpg --list-secret-keys "$sk" > /dev/null 2>&1; then
+    _check "git signing key ($sk)" true
   else
-    _check "dotfiles.toml" warn "not present (optional)"
+    _check "git signing key" warn "$sk not in keyring — run: dot gpg-sync"
   fi
 
   echo ""
@@ -628,6 +643,13 @@ _dot_update() {
     (cd "$DOTFILES" && stow --dir="$DOTFILES/stow" --target="$HOME" \
       --restow $(ls stow) 2> /dev/null) \
       || echo -e "${_r}x${_n} Stow failed; run install.sh manually." >&2
+  fi
+
+  if [[ -x "$DOTFILES/scripts/git-signingkey.sh" ]]; then
+    echo -e "${_c}->${_n} Syncing GPG signing key..."
+    "$DOTFILES/scripts/git-signingkey.sh" --write > /dev/null 2>&1 \
+      && echo -e "${_g}v${_n} Signing key synced." \
+      || echo -e "${_r}x${_n} Signing key unresolved; run: dot gpg-sync"
   fi
 
   if [[ -x "$DOTFILES/install.sh" ]]; then
