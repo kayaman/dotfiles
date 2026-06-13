@@ -23,9 +23,20 @@ never sync properly":
 3. **`dotfiles.toml [git] signingkey`.** A third intended source of truth that
    nothing wires into git.
 
+A **fourth** churn source: `scripts/setup-git.sh` configures git via
+`git config --global user.signingkey/name/email` — and because `~/.gitconfig`
+is the stowed symlink, every run rewrites the *tracked* `stow/git/.gitconfig`.
+
 A related instance of the same disease: `stow/git/.githooks/pre-commit` is a
 lefthook shim with a hardcoded `/home/kayaman/...` absolute path that also
 flip-flops on every machine, reached via `core.hooksPath = ~/.githooks`.
+
+## Core principle
+
+**Nothing in this repo may write to `git config --global`**, because the global
+file *is* a tracked, stowed file. Every machine-local write — `user.signingkey`,
+and `user.name`/`user.email` when set interactively — targets the untracked
+include file `~/.config/git/local.gitconfig` instead.
 
 ## Goals
 
@@ -77,11 +88,13 @@ Generation is idempotent: overwrite on each run.
 
 ### 3. Key resolution (shared logic)
 
-A single shared POSIX script, `scripts/git-signingkey.sh`, is invoked by both
+A single shared bash script, `scripts/git-signingkey.sh`, is invoked by both
 `install.sh` (bash) and `dot` (zsh) to avoid duplicated logic across the two
-languages. It prints the resolved long key id to stdout, or exits non-zero with
-a diagnostic on stderr. Resolution order (decision: **pin in dotfiles.toml,
-else newest**):
+languages. It reuses the same NUL-delimited python `tomllib` parser already in
+`setup-git.sh` to read the optional pin. It prints the resolved long key id to
+stdout, or exits non-zero with a diagnostic on stderr. With `--write` it also
+writes `~/.config/git/local.gitconfig`. Resolution order (decision: **pin in
+dotfiles.toml, else newest**):
 
 1. **Explicit pin.** If `dotfiles.toml [git] signingkey` is set and non-empty,
    use it verbatim. (Empty string `""` counts as unset.)
@@ -106,6 +119,12 @@ If `gpg` is not installed, warn and skip without failing the install.
   a toggle component); guarded so a missing `gpg` only warns.
 - **`dot`**: new subcommand `dot gpg-sync` that regenerates the local file.
   `_dot_update` calls it after re-stowing. `dot help` gains a one-line entry.
+- **`scripts/setup-git.sh`**: redirect its `git config --global` writes for
+  `user.signingkey` (and the `user.name`/`user.email` it sets interactively)
+  to `git config --file "$HOME/.config/git/local.gitconfig"`, so the
+  interactive path stops mutating the tracked symlink. Its existing
+  `commit.gpgsign`/`tag.gpgSign` toggles also move to the local file (or are
+  dropped, since the tracked config already sets them).
 
 ### 5. Retire the redaction pattern and update the doctor check
 
@@ -170,9 +189,11 @@ install.sh / dot gpg-sync
 
 - `stow/git/.gitconfig` — drop `signingkey`, drop `hooksPath`, add `[include]`.
 - `stow/git/.githooks/` — deleted.
-- `scripts/git-signingkey.sh` — new shared resolver.
+- `scripts/git-signingkey.sh` — new shared resolver (+`--write`).
+- `scripts/setup-git.sh` — redirect `--global` writes to the include file.
 - `install.sh` — new `setup_git_signingkey` step + `main` wiring.
 - `stow/zsh/functions.d/dot.zsh` — `dot gpg-sync`, `_dot_update` call,
   `_dot_doctor` check, help text.
 - `.dotfilter` — remove `signingkey` pattern.
 - `dotfiles.toml.example` — clarify `[git] signingkey` is the optional pin.
+- `tests/git-signingkey.test.sh` — new; stubbed-`gpg` unit checks.
