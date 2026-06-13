@@ -720,6 +720,24 @@ symlink_dotfiles() {
   cd "$DOTFILES"
 }
 
+# ── 4b. Machine-local git signing key ────────────────────────
+# Resolve this machine's GPG key (pin in dotfiles.toml, else newest secret
+# key for the identity email) and write ~/.config/git/local.gitconfig, which
+# the tracked .gitconfig pulls in via [include]. Never fails the install.
+setup_git_signingkey() {
+  section "Git Signing Key (machine-local)"
+  local gen="$DOTFILES/scripts/git-signingkey.sh"
+  if [[ ! -x "$gen" ]]; then
+    warn "scripts/git-signingkey.sh missing — skipping signing key setup"
+    return 0
+  fi
+  if "$gen" --write; then
+    ok "Wrote machine-local signing key to ~/.config/git/local.gitconfig"
+  else
+    warn "No GPG signing key resolved — set dotfiles.toml [git] signingkey or import your key, then run: dot gpg-sync"
+  fi
+}
+
 # ── 5. Cedilla fix (RPM-based distros, BR/PT-BR on US keyboard) ───────
 fix_cedilla() {
   case "$DISTRO" in
@@ -838,6 +856,7 @@ main() {
   # exists, which makes stow abort the entire zsh package on conflict. Stowing
   # first means OMZ (run with KEEP_ZSHRC=yes) sees the symlink and leaves it.
   run_step symlink_dotfiles
+  run_step setup_git_signingkey
   if want omz; then run_step install_oh_my_zsh; fi
   install_dev_tools
   if want claude; then run_step install_claude_config; fi
