@@ -4,7 +4,6 @@
 # Working-tree files are never modified.
 # Add patterns with: dot filter-add <pattern>
 
-signingkey\s*=.*
 GITHUB_TOKEN\s*=.*
 OPENAI_API_KEY\s*=.*
 password\s*=.*
