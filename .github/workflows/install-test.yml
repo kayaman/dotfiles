@@ -85,6 +85,11 @@ jobs:
             echo '::error::second run backed up files — install is not idempotent'
             exit 1
           fi
+          # curl progress meters reaching 100 <N>M mean a tool was re-downloaded
+          if grep -qE '100 +[0-9.]+M' /tmp/second-run.log; then
+            echo '::error::second run re-downloaded artifacts — install is not idempotent'
+            exit 1
+          fi
 
       - name: Doctor
         run: >-
