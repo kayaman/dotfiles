@@ -13,7 +13,9 @@ YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-if [[ ! -d "$DOTFILES/.git" ]]; then
+# rev-parse (not a .git dir check) so worktrees and submodules work, and the
+# hooks dir is resolved rather than assumed to be $DOTFILES/.git/hooks.
+if ! git -C "$DOTFILES" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
   echo "Error: $DOTFILES is not a git repository." >&2
   exit 1
 fi
@@ -23,7 +25,11 @@ if [[ ! -f "$DOTFILTER" ]]; then
   exit 1
 fi
 
-filter_script="$DOTFILES/.git/hooks/dot-clean-filter"
+hooks_dir="$(git -C "$DOTFILES" rev-parse --path-format=absolute --git-path hooks)"
+mkdir -p "$hooks_dir"
+filter_script="$hooks_dir/dot-clean-filter"
+# The sed delimiter is / (with literal slashes in patterns escaped), so the
+# full ERE syntax .dotfilter advertises — alternation included — works.
 printf "%s\n" \
   '#!/usr/bin/env bash' \
   'DOTFILES="$(git rev-parse --show-toplevel 2>/dev/null)"' \
@@ -33,8 +39,7 @@ printf "%s\n" \
   'while IFS= read -r pattern; do' \
   '    [[ -z "$pattern" || "$pattern" == \#* ]] && continue' \
   '    pattern="${pattern//\//\\/}"' \
-  '    pattern="${pattern//|/\\|}"' \
-  '    sed_expr="${sed_expr}s|${pattern}|# [REDACTED by dot-filter]|Ig;"' \
+  '    sed_expr="${sed_expr}s/${pattern}/# [REDACTED by dot-filter]/Ig;"' \
   'done < "$DOTFILTER"' \
   '[[ -z "$sed_expr" ]] && { cat; exit 0; }' \
   'exec sed -E "$sed_expr"' \

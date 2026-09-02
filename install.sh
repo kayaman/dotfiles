@@ -105,6 +105,7 @@ component_supported() {
   case "$1" in
     zed | chrome) [[ "$ARCH" == "amd64" ]] ;;
     aws-cli) [[ "$ARCH" == "amd64" || "$ARCH" == "arm64" ]] ;;
+    vscode) [[ "$ARCH" != "armhf" ]] ;;
     cedilla) [[ "$DISTRO" == "opensuse" || "$DISTRO" == "fedora" ]] ;;
     *) return 0 ;;
   esac
@@ -451,7 +452,11 @@ install_gh() {
     gh_tmp="$(mktemp -d)"
     if curl -fsSL "https://github.com/cli/cli/releases/download/${GH_VERSION}/gh_${GH_VERSION#v}_linux_${gh_arch}.tar.gz" \
       | tar xz -C "$gh_tmp" --strip-components=1; then
-      sudo install -m 755 "$gh_tmp/bin/gh" /usr/local/bin/gh
+      sudo install -m 755 "$gh_tmp/bin/gh" /usr/local/bin/gh || {
+        warn "gh install failed"
+        rm -rf "$gh_tmp"
+        return 1
+      }
       ok "gh ${GH_VERSION} installed"
     else
       warn "gh download failed"
@@ -474,7 +479,11 @@ install_terraform() {
     if curl -fsSL -o "$tf_tmp/terraform.zip" \
       "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION#v}/terraform_${TERRAFORM_VERSION#v}_linux_${tf_arch}.zip" \
       && unzip -q "$tf_tmp/terraform.zip" -d "$tf_tmp"; then
-      sudo install -m 755 "$tf_tmp/terraform" /usr/local/bin/terraform
+      sudo install -m 755 "$tf_tmp/terraform" /usr/local/bin/terraform || {
+        warn "terraform install failed"
+        rm -rf "$tf_tmp"
+        return 1
+      }
       ok "terraform ${TERRAFORM_VERSION} installed"
     else
       warn "terraform download failed"
@@ -504,7 +513,11 @@ install_awscli() {
       if curl -fsSL -o "$aws_tmp/awscliv2.zip" \
         "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" \
         && unzip -q "$aws_tmp/awscliv2.zip" -d "$aws_tmp"; then
-        sudo "$aws_tmp/aws/install" > /dev/null
+        sudo "$aws_tmp/aws/install" > /dev/null || {
+          warn "aws-cli install failed"
+          rm -rf "$aws_tmp"
+          return 1
+        }
         ok "aws-cli installed"
       else
         warn "aws-cli download failed"
@@ -530,7 +543,7 @@ install_vscode() {
         sudo zypper install --no-confirm code || return 1
         ok "VSCode installed"
         ;;
-      ubuntu)
+      ubuntu | raspberry)
         curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
           | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
@@ -891,7 +904,10 @@ set_default_shell() {
   if ! grep -qxF "$zsh_path" /etc/shells; then
     echo "$zsh_path" | sudo tee -a /etc/shells > /dev/null
   fi
-  chsh -s "$zsh_path" || warn "Run manually: chsh -s $zsh_path"
+  chsh -s "$zsh_path" || {
+    warn "chsh failed — run manually: chsh -s $zsh_path"
+    return 1
+  }
   ok "Default shell set to zsh"
 }
 
