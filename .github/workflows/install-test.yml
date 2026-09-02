@@ -38,7 +38,7 @@ jobs:
           - name: opensuse-tumbleweed
             image: opensuse/tumbleweed
             bootstrap: >-
-              zypper install -y --no-recommends
+              zypper install -y --no-recommends --force-resolution
               sudo git curl ca-certificates tar gzip unzip shadow
           - name: fedora
             image: fedora:latest
