@@ -634,38 +634,9 @@ dot() {
                 ;;
 
         filter-install)
-                if [[ ! -f "$DOTFILTER" ]]; then
-                        echo -e "${_y}No .dotfilter found.${_n} Create one: dot filter-add <pattern>"
-                        return 1
-                fi
-                local filter_script="$DOTFILES/.git/hooks/dot-clean-filter"
-                printf "%s\n" \
-                        "#!/usr/bin/env bash" \
-                        "DOTFILES=\"\$(git rev-parse --show-toplevel 2>/dev/null)\"" \
-                        "DOTFILTER=\"\$DOTFILES/.dotfilter\"" \
-                        "[[ ! -f \"\$DOTFILTER\" ]] && { cat; exit 0; }" \
-                        "sed_expr=\"\"" \
-                        "while IFS= read -r pattern; do" \
-                        "    [[ -z \"\$pattern\" || \"\$pattern\" == \#* ]] && continue" \
-                        "    pattern=\"\${pattern//\//\\/}\"" \
-                        "    sed_expr=\"\${sed_expr}s|\${pattern}|# [REDACTED by dot-filter]|Ig;\"" \
-                        "done < \"\$DOTFILTER\"" \
-                        "[[ -z \"\$sed_expr\" ]] && { cat; exit 0; }" \
-                        "exec sed -E \"\$sed_expr\"" \
-                        >"$filter_script"
-                chmod +x "$filter_script"
-                (
-                        cd "$DOTFILES"
-                        git config filter.dot-secrets.clean "$filter_script"
-                        git config filter.dot-secrets.smudge "cat"
-                        git config filter.dot-secrets.required false
-                )
-                local gitattributes="$DOTFILES/.gitattributes"
-                if ! grep -q "dot-secrets" "$gitattributes" 2>/dev/null; then
-                        echo "* filter=dot-secrets" >>"$gitattributes"
-                        echo -e "$_ok filter=dot-secrets added to .gitattributes"
-                fi
-                echo -e "$_ok Filter installed. Secrets stripped at git-add time."
+                # Logic lives in scripts/filter-install.sh so install.sh can
+                # register the filter during bootstrap too.
+                bash "$DOTFILES/scripts/filter-install.sh"
                 ;;
 
         config)
