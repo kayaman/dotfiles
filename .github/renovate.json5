@@ -1,0 +1,16 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended'],
+  // Track the pinned tool versions in install.sh. Each pin is annotated with
+  //   # renovate: datasource=github-releases depName=<owner>/<repo>
+  //   X_VERSION="vN.N.N"
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: ['/^install\\.sh$/'],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n[A-Z_]+_VERSION="(?<currentValue>[^"]+)"',
+      ],
+    },
+  ],
+}
