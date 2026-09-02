@@ -237,7 +237,7 @@ install_system_packages() {
   case "$DISTRO" in
     opensuse)
       local pkgs=(
-        git curl wget unzip tar make gcc gcc-c++ gawk jq
+        git curl wget unzip tar make gcc gcc-c++ gawk jq findutils
         fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck
         python3 python3-pip python3-pipx nodejs npm zsh
       )
@@ -249,7 +249,7 @@ install_system_packages() {
       ;;
     ubuntu | raspberry)
       local pkgs=(
-        git curl wget unzip tar build-essential gawk jq
+        git curl wget unzip tar build-essential gawk jq findutils
         fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt
         python3 python3-pip python3-venv pipx zsh
       )
@@ -288,7 +288,7 @@ install_system_packages() {
       ;;
     fedora)
       local pkgs=(
-        git curl wget unzip tar make gcc gcc-c++ gawk jq
+        git curl wget unzip tar make gcc gcc-c++ gawk jq findutils
         fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck
         python3 python3-pip pipx nodejs npm zsh
       )
@@ -903,27 +903,32 @@ doctor() {
   done < <(sorted_components)
 
   section "Stow symlinks"
-  local pkg src rel dest stow_bad=0
-  cd "$DOTFILES/stow"
-  for pkg in */; do
-    pkg="${pkg%/}"
-    while IFS= read -r src; do
-      rel="${src#"$pkg"/}"
-      dest="$HOME/$rel"
-      if [[ ! -e "$dest" ]]; then
-        err "not stowed: ~/$rel"
-        stow_bad=$((stow_bad + 1))
-      elif [[ "$(readlink -f "$dest" 2> /dev/null)" != "$(readlink -f "$src")" ]]; then
-        err "wrong target: ~/$rel -> $(readlink -f "$dest" 2> /dev/null || echo '?')"
-        stow_bad=$((stow_bad + 1))
-      fi
-    done < <(find "$pkg" ! -type d)
-  done
-  cd "$DOTFILES"
-  if [[ "$stow_bad" == 0 ]]; then
-    ok "All stow-managed files resolve into the repo"
+  if ! command -v find &> /dev/null; then
+    err "find not available — cannot verify stow symlinks"
+    fails=$((fails + 1))
   else
-    fails=$((fails + stow_bad))
+    local pkg src rel dest stow_bad=0
+    cd "$DOTFILES/stow"
+    for pkg in */; do
+      pkg="${pkg%/}"
+      while IFS= read -r src; do
+        rel="${src#"$pkg"/}"
+        dest="$HOME/$rel"
+        if [[ ! -e "$dest" ]]; then
+          err "not stowed: ~/$rel"
+          stow_bad=$((stow_bad + 1))
+        elif [[ "$(readlink -f "$dest" 2> /dev/null)" != "$(readlink -f "$src")" ]]; then
+          err "wrong target: ~/$rel -> $(readlink -f "$dest" 2> /dev/null || echo '?')"
+          stow_bad=$((stow_bad + 1))
+        fi
+      done < <(find "$pkg" ! -type d)
+    done
+    cd "$DOTFILES"
+    if [[ "$stow_bad" == 0 ]]; then
+      ok "All stow-managed files resolve into the repo"
+    else
+      fails=$((fails + stow_bad))
+    fi
   fi
 
   section "Config"
@@ -1006,11 +1011,11 @@ main() {
   DISTRO="$(detect_distro)"
   info "Detected distro: $DISTRO ($ARCH)"
 
-  # Tools installed below land in ~/.local/bin and ~/.cargo/bin; a fresh
-  # machine's PATH doesn't include them yet, so later steps in this same run
-  # (e.g. the Claude config restore probing `command -v claude`) would miss
-  # them without this.
-  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+  # Tools installed below land in ~/.local/bin, ~/.cargo/bin and
+  # /usr/local/bin; a fresh machine's (or sudo secure_path's) PATH may not
+  # include them yet, so later probes in this same run — and re-run
+  # idempotency checks — would miss them without this.
+  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
 
   if [[ "$MODE" == "doctor" ]]; then
     doctor
