@@ -105,7 +105,6 @@ dot() {
       echo "  in the git index. Working-tree files are never modified."
       echo ""
       echo "  Example .dotfilter entries:"
-      echo "    signingkey\s*=.*"
       echo "    GITHUB_TOKEN\s*=.*"
       echo "    password\s*=.*"
       echo ""
@@ -612,6 +611,8 @@ _dot_doctor() {
   sk=$(git config user.signingkey 2> /dev/null)
   if [[ -z "$sk" ]]; then
     _check "git signing key" warn "user.signingkey unset — run: dot gpg-sync"
+  elif ! command -v gpg > /dev/null 2>&1; then
+    _check "git signing key" warn "gpg not installed — run: install.sh"
   elif command -v gpg > /dev/null 2>&1 && gpg --list-secret-keys "$sk" > /dev/null 2>&1; then
     _check "git signing key ($sk)" true
   else

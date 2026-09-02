@@ -119,7 +119,10 @@ main() {
   rc=$?
   [[ "$rc" -ne 0 ]] && exit "$rc"
   if [[ "$do_write" -eq 1 ]]; then
-    write_local "$key"
+    if ! write_local "$key"; then
+      err "Could not write $LOCAL_GITCONFIG"
+      exit 1
+    fi
     ok "Wrote $LOCAL_GITCONFIG (signingkey = $key)"
   else
     printf '%s\n' "$key"

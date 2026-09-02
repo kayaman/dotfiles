@@ -533,7 +533,6 @@ dot() {
                 echo "  in the git index. Working-tree files are never modified."
                 echo ""
                 echo "  Example .dotfilter entries:"
-                echo "    signingkey\s*=.*"
                 echo "    GITHUB_TOKEN\s*=.*"
                 echo "    password\s*=.*"
                 echo ""
