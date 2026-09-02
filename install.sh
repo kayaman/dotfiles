@@ -243,7 +243,9 @@ install_system_packages() {
       )
       want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo zypper refresh
-      sudo zypper install -y --no-recommends "${pkgs[@]}"
+      # --force-resolution: unattended runs must auto-resolve conflicts (e.g.
+      # minimal/container images ship busybox-gawk, which blocks real gawk)
+      sudo zypper install -y --no-recommends --force-resolution "${pkgs[@]}"
       ;;
     ubuntu | raspberry)
       local pkgs=(
