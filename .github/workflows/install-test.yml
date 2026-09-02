@@ -1,0 +1,92 @@
+name: install-test
+
+# Runs install.sh for real inside containers of every supported distro, as a
+# non-root user with passwordless sudo — the closest CI gets to a fresh
+# machine. A second identical run asserts idempotency. The weekly cron catches
+# upstream breakage in the curl-pipe installers (nvm, uv, rustup, OMZ) that
+# lands without any change to this repo.
+
+on:
+  pull_request:
+    paths:
+      - install.sh
+      - bootstrap.sh
+      - scripts/**
+      - .github/workflows/install-test.yml
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# GUI apps are pointless headless; chsh needs PAM interaction; podman-in-docker
+# is not worth the trouble. Everything else runs.
+env:
+  SKIP_COMPONENTS: chrome,vscode,alacritty,zed,claude,podman,shell
+
+jobs:
+  install:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: opensuse-tumbleweed
+            image: opensuse/tumbleweed
+            bootstrap: >-
+              zypper install -y --no-recommends
+              sudo git curl ca-certificates tar gzip unzip shadow
+          - name: fedora
+            image: fedora:latest
+            bootstrap: >-
+              dnf install -y
+              sudo git curl ca-certificates tar gzip unzip shadow-utils
+          - name: ubuntu
+            image: ubuntu:24.04
+            bootstrap: >-
+              apt-get update &&
+              DEBIAN_FRONTEND=noninteractive apt-get install -y
+              sudo git curl ca-certificates tar gzip unzip
+    steps:
+      - name: Bootstrap container deps and tester user
+        run: |
+          ${{ matrix.bootstrap }}
+          useradd -m -s /bin/bash tester
+          echo 'tester ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tester
+
+      - uses: actions/checkout@v4
+
+      - name: Hand the repo to tester
+        run: |
+          cp -a "$GITHUB_WORKSPACE" /home/tester/dotfiles
+          chown -R tester:tester /home/tester/dotfiles
+
+      - name: Smoke test --help
+        run: sudo -u tester -H bash -c 'cd ~/dotfiles && bash install.sh --help'
+
+      - name: First install
+        run: >-
+          sudo -u tester -H bash -c
+          "cd ~/dotfiles && bash install.sh --without $SKIP_COMPONENTS"
+
+      - name: Second install (idempotency)
+        # explicit `shell: bash` turns on pipefail so the tee pipe can't mask
+        # an installer failure
+        shell: bash
+        run: |
+          sudo -u tester -H bash -c \
+            "cd ~/dotfiles && bash install.sh --without $SKIP_COMPONENTS" \
+            | tee /tmp/second-run.log
+          if grep -q 'Backed up' /tmp/second-run.log; then
+            echo '::error::second run backed up files — install is not idempotent'
+            exit 1
+          fi
+
+      - name: Doctor
+        run: >-
+          sudo -u tester -H bash -c
+          "cd ~/dotfiles && bash install.sh doctor --without $SKIP_COMPONENTS"
