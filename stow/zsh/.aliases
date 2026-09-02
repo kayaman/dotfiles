@@ -72,6 +72,7 @@ alias timestamp='date +%Y-%m-%dT%H:%M:%S'
 alias week='date +%V'
 alias c='clear'
 alias h='history | tail -30'
+alias src='exec zsh'
 
 # ── Docker ─────────────────────────────────────────────────────
 alias dcup='docker compose up'
@@ -87,4 +88,4 @@ alias gpgls='gpg --list-secret-keys --keyid-format=long'
 alias pb='cd "$HOME/Projects/blogmarks"'
 alias pm='cd "$HOME/Projects/magj-dev"'
 
-alias suclaude='claude --dangerously-skip-permissions'
+alias suclaude='claude --dangerously-skip-permissions -w'

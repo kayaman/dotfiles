@@ -49,8 +49,16 @@ elif [[ -f "$config_file" ]]; then
 fi
 
 if [[ -n "${content:-}" ]]; then
-  # Parse git section
-  eval "$(echo "$content" | python3 -c "
+  # Parse git section. Python emits NUL-delimited key=value records and bash
+  # reads them directly — no eval, so a config value containing quotes, $(),
+  # or backticks can never be executed as shell.
+  while IFS= read -r -d '' _tkv; do
+    case "${_tkv%%=*}" in
+      name) toml_name=${_tkv#*=} ;;
+      email) toml_email=${_tkv#*=} ;;
+      signingkey) toml_signingkey=${_tkv#*=} ;;
+    esac
+  done < <(printf '%s' "$content" | python3 -c "
 import sys
 try:
     import tomllib
@@ -65,10 +73,10 @@ try:
     git = data.get('git', {})
     for k, v in git.items():
         if isinstance(v, str):
-            print(f'toml_{k}=\"{v}\"')
+            sys.stdout.write(f'{k}={v}\0')
 except Exception:
     pass
-" 2> /dev/null)"
+" 2> /dev/null)
 fi
 
 if [[ "$NON_INTERACTIVE" == 1 ]]; then

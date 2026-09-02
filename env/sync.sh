@@ -206,14 +206,20 @@ cmd_encrypt() {
   info "Recipient : $pubkey"
   info "Media     : $media"
 
-  # Encrypt with SOPS using age — treat .env as dotenv format
+  # Encrypt with SOPS using age — treat .env as dotenv format.
+  # Write to a temp file first so a failed sops run can't truncate/destroy an
+  # existing good backup; only move into place once encryption succeeds.
+  local tmp
+  tmp="$(mktemp "$dest/.sync.XXXXXX")"
+  trap 'rm -f "$tmp"' RETURN
+  chmod 600 "$tmp"
   sops encrypt \
     --age "$pubkey" \
     --input-type dotenv \
     --output-type dotenv \
-    "$ENV_FILE" > "$enc_file"
+    "$ENV_FILE" > "$tmp"
+  mv -f "$tmp" "$enc_file"
 
-  chmod 600 "$enc_file"
   ok "Encrypted and saved to: $enc_file"
 
   # Also back up the age key alongside (optional, prompted)

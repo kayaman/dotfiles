@@ -72,14 +72,16 @@ Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.de
 
 Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
 
-### Dry run and health check
+### Dry run, health check, uninstall
 
 ```bash
 bash install.sh --dry-run     # show what a run would install — no sudo, no changes
 bash install.sh doctor        # verify an installed machine: components, symlinks, config
+bash install.sh --verbose     # echo every command (set -x) for debugging
+bash install.sh --uninstall   # remove all stow symlinks; print (don't run) tool removal cmds
 ```
 
-`doctor` exits non-zero if any enabled component is missing or any stow-managed file doesn't resolve into the repo — CI runs it after every install test.
+`doctor` exits non-zero if any enabled component is missing or any stow-managed file doesn't resolve into the repo — CI runs it after every install test. `--uninstall --dry-run` composes: preview removal without touching disk.
 
 ### Versions
 
@@ -137,6 +139,8 @@ dotfiles/
 | `dot diff` | Uncommitted diff (staged + unstaged) |
 | `dot edit` | Open the dotfiles repo in `$EDITOR` / `code` |
 | `dot cd` | `cd` into the dotfiles directory |
+| `dot doctor` | Health check: stow links, required tools, filter hook, startup time, `dotfiles.toml` |
+| `dot update` | Pull, re-stow every package, then dry-run the installer |
 | `dot config get <section.key>` | Read a value from `dotfiles.toml` |
 | `dot config list [section]` | List keys in a section (or all sections) |
 | `dot config apply` | Export `[secrets]` into the current shell |

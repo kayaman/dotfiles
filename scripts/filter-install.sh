@@ -33,6 +33,7 @@ printf "%s\n" \
   'while IFS= read -r pattern; do' \
   '    [[ -z "$pattern" || "$pattern" == \#* ]] && continue' \
   '    pattern="${pattern//\//\\/}"' \
+  '    pattern="${pattern//|/\\|}"' \
   '    sed_expr="${sed_expr}s|${pattern}|# [REDACTED by dot-filter]|Ig;"' \
   'done < "$DOTFILTER"' \
   '[[ -z "$sed_expr" ]] && { cat; exit 0; }' \

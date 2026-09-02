@@ -3,14 +3,24 @@
 #  Dotfiles Installer — Linux (openSUSE, Ubuntu, Fedora)
 #  Installs system packages, dev tools, Oh My Zsh, and symlinks dotfiles.
 #
-#  Usage: install.sh [--with NAME]... [--without NAME]...
+#  Usage: install.sh [--with NAME]... [--without NAME]... [--dry-run] [--verbose]
+#         install.sh --uninstall
 #    --with NAME      force-install an opt-in component (e.g. --with claude)
 #    --without NAME   skip a component (e.g. --without podman)
+#    --dry-run        print which components would run; touch nothing on disk
+#    --verbose        echo every command (set -x) for debugging
+#    --uninstall      remove all stow symlinks and print (not execute) the
+#                     package-manager commands to undo each install step
 #    --help           list all components and their default state
 #  Claude (CLI + config) is opt-in; everything else installs by default.
 # =============================================================================
 
 set -euo pipefail
+trap 'err "Failed at line $LINENO: $BASH_COMMAND"' ERR
+
+DRY_RUN=0
+VERBOSE=0
+UNINSTALL=0
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${XDG_CONFIG_HOME:="$HOME/.config"}"
@@ -50,15 +60,14 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 # here, then guard its install block with `want <name>`.
 declare -A COMPONENT_DEFAULT=(
   [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
-  [claude]=off [lefthook]=on [gh]=on [terraform]=on [aws-cli]=on
+  [claude]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
   [vscode]=on [podman]=on [alacritty]=on [chrome]=on [cedilla]=on [shell]=on
-  [fonts]=on [git-config]=on [dot-filter]=on
+  [fonts]=on ["git-config"]=on ["dot-filter"]=on
 )
 declare -A COMPONENT_STATE
 # Filled by run_component: ok | failed | skipped | unsupported
 declare -A RESULT
 MODE="install"
-DRY_RUN=0
 
 want() { [[ "${COMPONENT_STATE[$1]:-off}" == "on" ]]; }
 
@@ -123,7 +132,8 @@ run_component() {
 
 usage() {
   cat << EOF
-Usage: install.sh [doctor] [--with NAME]... [--without NAME]... [--dry-run]
+Usage: install.sh [doctor] [--with NAME]... [--without NAME]... [--dry-run] [--verbose]
+       install.sh --uninstall
 
 Selects which components to install. Names may be comma-separated or the flag
 repeated (e.g. --with claude --without podman,chrome). Also accepts --with=NAME.
@@ -132,6 +142,8 @@ repeated (e.g. --with claude --without podman,chrome). Also accepts --with=NAME.
   --with NAME      Force-install NAME (use for opt-in components like claude)
   --without NAME   Skip NAME
   --dry-run        Show what would be installed, then exit (no sudo, no changes)
+  --verbose        Echo every command (set -x) for debugging
+  --uninstall      Remove all stow symlinks; print (don't run) tool removal cmds
   -h, --help       Show this help
 
 Components (default state):
@@ -183,6 +195,8 @@ parse_args() {
       --without=*) _apply_list off "${1#*=}" ;;
       doctor) MODE="doctor" ;;
       --dry-run) DRY_RUN=1 ;;
+      --verbose) VERBOSE=1 ;;
+      --uninstall) UNINSTALL=1 ;;
       -h | --help)
         usage
         exit 0
@@ -204,6 +218,20 @@ detect_arch() {
     aarch64 | arm64) ARCH="arm64" ;;
     armv7l | armhf) ARCH="armhf" ;;
     *) ARCH="$(uname -m)" ;;
+  esac
+}
+
+# arch_for <tool> -> the arch token that <tool>'s upstream release uses.
+# Each tool's release filenames disagree on naming (x86_64 vs amd64, arm vs
+# armv6 vs armhf); centralizing the mapping makes the differences explicit
+# and means a new arch only needs to be added in one place.
+arch_for() {
+  case "$1:$ARCH" in
+    awscli:amd64 | lefthook:amd64) echo x86_64 ;;
+    awscli:arm64 | lefthook:arm64) echo aarch64 ;;
+    terraform:armhf) echo arm ;;
+    gh:armhf) echo armv6 ;;
+    *) echo "$ARCH" ;;
   esac
 }
 
@@ -239,7 +267,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar make gcc gcc-c++ gawk jq findutils
         fzf bat eza fd ripgrep git-delta htop tmux tree stow shfmt ShellCheck
-        python3 python3-pip python3-pipx nodejs npm zsh
+        python3 python3-pip python3-pipx nodejs npm zsh xclip
       )
       want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo zypper refresh
@@ -251,7 +279,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar build-essential gawk jq findutils
         fzf bat fd-find ripgrep htop tmux tree stow shellcheck shfmt
-        python3 python3-pip python3-venv pipx zsh
+        python3 python3-pip python3-venv pipx zsh xclip
       )
       want podman && pkgs+=(podman podman-compose podman-docker)
       sudo apt-get update
@@ -290,7 +318,7 @@ install_system_packages() {
       local pkgs=(
         git curl wget unzip tar make gcc gcc-c++ gawk jq findutils
         fzf bat eza fd-find ripgrep git-delta htop tmux tree stow shfmt ShellCheck
-        python3 python3-pip pipx nodejs npm zsh
+        python3 python3-pip pipx nodejs npm zsh xclip
       )
       want podman && pkgs+=(podman buildah distrobox podman-compose podman-docker)
       sudo dnf install -y --setopt=install_weak_deps=False "${pkgs[@]}"
@@ -402,11 +430,7 @@ install_claude_code() {
 install_lefthook() {
   if ! command -v lefthook &> /dev/null && [ ! -f "$HOME/.local/bin/lefthook" ]; then
     local lefthook_arch
-    case "$ARCH" in
-      amd64) lefthook_arch="x86_64" ;;
-      arm64) lefthook_arch="aarch64" ;;
-      *) lefthook_arch="$ARCH" ;;
-    esac
+    lefthook_arch="$(arch_for lefthook)"
     mkdir -p "$HOME/.local/bin"
     curl -fsSL -o "$HOME/.local/bin/lefthook" \
       "https://github.com/evilmartians/lefthook/releases/download/${LEFTHOOK_VERSION}/lefthook_${LEFTHOOK_VERSION#v}_Linux_${lefthook_arch}" || return 1
@@ -422,12 +446,7 @@ install_lefthook() {
 install_gh() {
   if ! command -v gh &> /dev/null; then
     local gh_arch
-    case "$ARCH" in
-      amd64) gh_arch="amd64" ;;
-      arm64) gh_arch="arm64" ;;
-      armhf) gh_arch="armv6" ;;
-      *) gh_arch="amd64" ;;
-    esac
+    gh_arch="$(arch_for gh)"
     local gh_tmp
     gh_tmp="$(mktemp -d)"
     if curl -fsSL "https://github.com/cli/cli/releases/download/${GH_VERSION}/gh_${GH_VERSION#v}_linux_${gh_arch}.tar.gz" \
@@ -449,12 +468,7 @@ install_gh() {
 install_terraform() {
   if ! command -v terraform &> /dev/null; then
     local tf_arch
-    case "$ARCH" in
-      amd64) tf_arch="amd64" ;;
-      arm64) tf_arch="arm64" ;;
-      armhf) tf_arch="arm" ;;
-      *) tf_arch="amd64" ;;
-    esac
+    tf_arch="$(arch_for terraform)"
     local tf_tmp
     tf_tmp="$(mktemp -d)"
     if curl -fsSL -o "$tf_tmp/terraform.zip" \
@@ -478,9 +492,10 @@ install_terraform() {
 install_awscli() {
   if ! command -v aws &> /dev/null; then
     local aws_arch=""
+    # arch_for falls through to $ARCH for unsupported (e.g. armhf); detect
+    # by checking for the two known-good tokens to keep the skip behavior.
     case "$ARCH" in
-      amd64) aws_arch="x86_64" ;;
-      arm64) aws_arch="aarch64" ;;
+      amd64 | arm64) aws_arch="$(arch_for awscli)" ;;
       *) warn "AWS CLI v2 has no Linux ${ARCH} build — skipping" ;;
     esac
     if [[ -n "$aws_arch" ]]; then
@@ -1004,6 +1019,49 @@ print_summary() {
   fi
 }
 
+# ── Uninstall ────────────────────────────────────────────────
+# Removes stow symlinks; intentionally does NOT uninstall packages —
+# stowed configs may be referenced by tools you still want to keep
+# around. Tool-removal commands are printed for the user to run manually.
+uninstall_dotfiles() {
+  section "Uninstall"
+
+  if ! command -v stow &> /dev/null; then
+    warn "stow is not installed — nothing to unstow"
+  elif [[ ! -d "$DOTFILES/stow" ]]; then
+    warn "$DOTFILES/stow missing — nothing to unstow"
+  else
+    local pkg
+    cd "$DOTFILES/stow"
+    for pkg in */; do
+      pkg="${pkg%/}"
+      if [[ "$DRY_RUN" == "1" ]]; then
+        info "[DRY] Would: stow -D -t $HOME $pkg"
+      else
+        stow -D -t "$HOME" "$pkg" 2> /dev/null && ok "Unstowed $pkg" \
+          || warn "Could not unstow $pkg (already removed?)"
+      fi
+    done
+    cd "$DOTFILES"
+  fi
+
+  echo ""
+  info "Stow symlinks have been removed."
+  info "Tools installed by install.sh are NOT removed automatically — too easy"
+  info "to break things that depend on them. To remove them yourself:"
+  echo ""
+  case "$DISTRO" in
+    opensuse) echo "  sudo zypper remove eza bat fzf fd ripgrep git-delta tmux stow shellcheck shfmt" ;;
+    ubuntu | raspberry) echo "  sudo apt-get remove eza bat fd-find ripgrep tmux stow shellcheck shfmt" ;;
+    fedora) echo "  sudo dnf remove eza bat fd-find ripgrep git-delta tmux stow ShellCheck shfmt" ;;
+  esac
+  echo "  rm -rf ~/.oh-my-zsh ~/.nvm ~/.config/nvm ~/.cargo ~/.rustup"
+  echo "  rm -f /usr/local/bin/{sops,gh,terraform} ~/.local/bin/lefthook"
+  echo "  rm -rf ~/.bun"
+  echo ""
+  ok "Uninstall complete."
+}
+
 main() {
   parse_args "$@"
 
@@ -1011,12 +1069,18 @@ main() {
   DISTRO="$(detect_distro)"
   info "Detected distro: $DISTRO ($ARCH)"
 
+  [[ "$VERBOSE" == "1" ]] && set -x
+
   # Tools installed below land in ~/.local/bin, ~/.cargo/bin and
   # /usr/local/bin; a fresh machine's (or sudo secure_path's) PATH may not
   # include them yet, so later probes in this same run — and re-run
   # idempotency checks — would miss them without this.
   export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
 
+  if [[ "$UNINSTALL" == "1" ]]; then
+    uninstall_dotfiles
+    exit 0
+  fi
   if [[ "$MODE" == "doctor" ]]; then
     doctor
     exit
