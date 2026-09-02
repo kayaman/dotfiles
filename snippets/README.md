@@ -20,11 +20,11 @@ Small, optional setup logic that doesn't fit in `.functions`, `.path`, or `.alia
 - Tool-specific lazy loaders (Bun, NVM, GCloud, etc.) — they live in `.zshrc`
   next to the other external-tool wiring, so the startup profiler (`dot
   profiler`) can attribute their cost cleanly.
-- Function definitions — add to `stow/zsh/functions.d/` instead.
+- Function definitions — add to `stow/zsh/.functions.d/` instead.
 - Aliases — add to `stow/zsh/.aliases`.
 
 ## Adding a snippet
 
 Drop a new `*.sh` file in this directory. It will be sourced on the next shell
 start. Keep it small; large snippets should become topic files under
-`stow/zsh/functions.d/`.
+`stow/zsh/.functions.d/`.

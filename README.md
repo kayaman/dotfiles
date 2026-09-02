@@ -70,18 +70,22 @@ bash install.sh --help                     # list all components and their defau
 
 Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.dev) --with claude`. Names may be comma-separated or the flag repeated.
 
-Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`. To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh` and guard its install step with `want <name>`.
+Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
 
-### Safety flags
+### Dry run, health check, uninstall
 
 ```bash
-bash install.sh --dry-run                  # print every step that would run; touch nothing
-bash install.sh --verbose                  # echo every command (set -x) for debugging
-bash install.sh --uninstall                # remove all stow symlinks; print (don't execute)
-                                           #   the commands to uninstall installed tools
+bash install.sh --dry-run     # show what a run would install — no sudo, no changes
+bash install.sh doctor        # verify an installed machine: components, symlinks, config
+bash install.sh --verbose     # echo every command (set -x) for debugging
+bash install.sh --uninstall   # remove all stow symlinks; print (don't run) tool removal cmds
 ```
 
-`--dry-run` and `--uninstall` compose: `install.sh --uninstall --dry-run` previews removal without touching disk.
+`doctor` exits non-zero if any enabled component is missing or any stow-managed file doesn't resolve into the repo — CI runs it after every install test. `--uninstall --dry-run` composes: preview removal without touching disk.
+
+### Versions
+
+Tool versions (sops, lefthook, gh, terraform, nvm, nerd-fonts) are pinned at the top of `install.sh` for reproducible installs; [Renovate](https://docs.renovatebot.com) bumps them via PRs validated by the install-test CI matrix (see `.github/renovate.json5` — requires the Renovate GitHub app to be enabled on the repo).
 
 ## Structure
 
@@ -152,10 +156,17 @@ Add ERE patterns (one per line) to `$DOTFILES/.dotfilter`. At `git add` time, li
 
 ## After Installation
 
-1. Restart your terminal or run `exec zsh`.
-2. Configure your favorite terminal emulator to use a **Nerd Font** (e.g., JetBrains Mono Nerd Font) to correctly render prompt symbols.
-3. Configure your Git user and GPG signing preferences by running:
+The installer already sets your git identity (when `dotfiles.toml` has a `[git]` section), registers the secret-redaction filter, and installs JetBrainsMono Nerd Font. What's left:
+
+1. Restart your terminal or run `exec zsh`, and select **JetBrainsMono Nerd Font** in your terminal emulator so prompt symbols render.
+2. If you haven't yet, create your config and re-run the git identity step:
    ```bash
-   ./scripts/setup-git.sh
+   cp dotfiles.toml.example dotfiles.toml   # fill in [git] name/email (+ signingkey)
+   ./scripts/setup-git.sh                   # interactive; or --non-interactive from the toml
    ```
-4. If you keep secrets in `dotfiles.toml`, run `dot filter-install` once on this machine to activate the secret-redaction git filter before committing. Use `dot config apply` to export `[secrets]` into your shell.
+3. Set up keys and upload them to GitHub (interactive, need a GitHub token):
+   ```bash
+   ./scripts/setup-ssh-github.sh            # generate/select an SSH key + upload
+   ./scripts/setup-gpg-github.sh            # generate/select a GPG key + upload
+   ```
+4. Verify the machine: `bash install.sh doctor`. Use `dot config apply` to export `[secrets]` into your shell.

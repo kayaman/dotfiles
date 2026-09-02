@@ -66,33 +66,6 @@ signingkey = ""                      # GPG key fingerprint; leave blank to disab
 # region  = "us-central1"
 
 
-# ── Tools / package managers ──────────────────────────────────────────────────
-[tools]
-# node_version   = "20"              # used by setup scripts (nvm / fnm)
-# python_version = "3.12"            # used by setup scripts (uv)
-# ruby_version   = "3.3"
-
-
-# ── Features — toggle setup-script behaviour ──────────────────────────────────
-# NOTE: illustrative placeholders — not yet read by any setup script.
-[features]
-# enable_kubernetes  = false
-# enable_homebrew    = true
-# enable_1password   = false
-# enable_direnv      = true
-
-
-# ── Snippets — control which snippets/ files are sourced ──────────────────────
-# NOTE: illustrative — currently every snippets/*.sh is sourced unconditionally
-# (see .zshrc); the per-snippet `false` toggle is not yet honored.
-[snippets]
-# nvm    = true
-# bun    = true
-# rbenv  = false
-# direnv = true
-# fzf    = true
-
-
 # ── Machine-specific overrides ────────────────────────────────────────────────
 # Use this section for settings that differ between machines.
 # Read with: dot config get machine.role

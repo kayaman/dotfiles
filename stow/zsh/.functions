@@ -1024,25 +1024,25 @@ function ghk() {
         echo $GITHUB_KAYAMAN_PAT | xclip -sel clip
         echo "Token copied to clipboard!"
 }
-#  .functions — loader for stow/zsh/functions.d/*.zsh
+#  .functions — loader for stow/zsh/.functions.d/*.zsh
 #
 #  This file is stowed to ~/.functions and sourced by .zshrc.
-#  Each topic file under functions.d/ defines a group of helpers:
+#  Each topic file under .functions.d/ defines a group of helpers:
 #    dot.zsh   — the `dot` dotfiles command + its TOML helper
 #    git.zsh   — interactive git helpers
 #    gpg.zsh   — gpg key + GitHub PAT clipboard helpers
 #    fs.zsh    — filesystem, navigation, file-search, viewing
 #    misc.zsh  — dev envs, network, containers, small utilities
 #
-#  Add a new topic by dropping a .zsh file in functions.d/.
+#  Add a new topic by dropping a .zsh file in .functions.d/.
 # ─────────────────────────────────────────────────────────────
 
 # Resolve the directory holding the topic files: prefer the repo's
-# stow/zsh/functions.d (so edits take effect without re-stow), then
+# stow/zsh/.functions.d (so edits take effect without re-stow), then
 # fall back to ~/.functions.d when only the stowed symlinks are present.
 _functions_dir() {
-        if [[ -n "${DOTFILES:-}" && -d "$DOTFILES/stow/zsh/functions.d" ]]; then
-                echo "$DOTFILES/stow/zsh/functions.d"
+        if [[ -n "${DOTFILES:-}" && -d "$DOTFILES/stow/zsh/.functions.d" ]]; then
+                echo "$DOTFILES/stow/zsh/.functions.d"
         elif [[ -d "$HOME/.functions.d" ]]; then
                 echo "$HOME/.functions.d"
         fi
