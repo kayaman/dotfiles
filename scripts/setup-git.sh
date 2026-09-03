@@ -2,6 +2,21 @@
 
 set -euo pipefail
 
+# --non-interactive: apply [git] values from dotfiles.toml without prompting.
+# Used by install.sh so the bootstrap stays unattended; skips quietly when the
+# toml is absent or still holds the example placeholders.
+NON_INTERACTIVE=0
+for arg in "$@"; do
+  case "$arg" in
+    --non-interactive | -n) NON_INTERACTIVE=1 ;;
+    *)
+      echo "Unknown argument: $arg" >&2
+      echo "Usage: setup-git.sh [--non-interactive]" >&2
+      exit 1
+      ;;
+  esac
+done
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
@@ -67,6 +82,29 @@ try:
 except Exception:
     pass
 " 2> /dev/null)
+fi
+
+if [[ "$NON_INTERACTIVE" == 1 ]]; then
+  if [[ -z "$toml_name" || -z "$toml_email" ||
+    "$toml_name" == "Your Name" || "$toml_email" == "you@example.com" ]]; then
+    warn "dotfiles.toml has no usable [git] identity — skipping"
+    info "Fill in [git] name/email and re-run, or run this script interactively."
+    exit 0
+  fi
+  git config --global user.name "$toml_name"
+  git config --global user.email "$toml_email"
+  ok "Set user.name '$toml_name' and user.email '$toml_email' from dotfiles.toml"
+  if [[ -n "$toml_signingkey" ]]; then
+    if gpg --list-secret-keys "$toml_signingkey" &> /dev/null; then
+      gc user.signingkey "$toml_signingkey"
+      gc commit.gpgsign true
+      gc tag.gpgSign true
+      ok "Enabled GPG signing with key $toml_signingkey"
+    else
+      warn "No local secret key for signingkey '$toml_signingkey' — signing left disabled"
+    fi
+  fi
+  exit 0
 fi
 
 # ── 1. User Name ──────────────────────────────────────────────

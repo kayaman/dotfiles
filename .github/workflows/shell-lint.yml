@@ -55,7 +55,7 @@ jobs:
       - name: zsh syntax check
         run: |
           sudo apt-get update -qq && sudo apt-get install -y zsh
-          for f in stow/zsh/.zshrc stow/zsh/.functions stow/zsh/.path stow/zsh/functions.d/*.zsh; do
+          for f in stow/zsh/.zshrc stow/zsh/.functions stow/zsh/.path stow/zsh/.functions.d/*.zsh; do
             zsh -n "$f"
           done
 
