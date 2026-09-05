@@ -40,7 +40,7 @@ SOPS_VERSION="v3.13.3"
 # renovate: datasource=github-releases depName=evilmartians/lefthook
 LEFTHOOK_VERSION="v2.1.12"
 # renovate: datasource=github-releases depName=cli/cli
-GH_VERSION="v2.99.0"
+GH_VERSION="v2.100.0"
 # renovate: datasource=github-releases depName=hashicorp/terraform
 TERRAFORM_VERSION="v1.16.1"
 # renovate: datasource=github-releases depName=nvm-sh/nvm
