@@ -14,7 +14,7 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 # rev-parse (not a .git dir check) so worktrees and submodules work, and the
-# hooks dir is resolved rather than assumed to be $DOTFILES/.git/hooks.
+# git dir is resolved rather than assumed to be $DOTFILES/.git.
 if ! git -C "$DOTFILES" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
   echo "Error: $DOTFILES is not a git repository." >&2
   exit 1
