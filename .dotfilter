@@ -7,7 +7,6 @@
 # Patterns require a real-looking value so that placeholders, empty
 # assignments, and source code mentioning these names survive intact
 # (the filter must be a no-op on the repo's own tracked content).
-signingkey\s*=\s*"?[0-9A-Fa-f]{8,}
 GITHUB_TOKEN\s*=\s*"?gh[a-z]_[A-Za-z0-9_]{10,}
 GH_TOKEN\s*=\s*"?gh[a-z]_[A-Za-z0-9_]{10,}
 OPENAI_API_KEY\s*=\s*"?sk-[A-Za-z0-9_-]{10,}

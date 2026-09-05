@@ -28,6 +28,11 @@ ok() { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn() { echo -e "${RED}[WARN]${NC}  $*"; }
 prompt() { echo -e -n "${BOLD}$*${NC} "; }
 
+# Write to the machine-local include file, never the stowed (tracked) ~/.gitconfig.
+LOCAL_GITCONFIG="$HOME/.config/git/local.gitconfig"
+mkdir -p "$(dirname "$LOCAL_GITCONFIG")"
+gc() { git config --file "$LOCAL_GITCONFIG" "$@"; }
+
 echo -e "\n${CYAN}╔══════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║     Git User & GPG Signing Setup         ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}\n"
@@ -91,9 +96,9 @@ if [[ "$NON_INTERACTIVE" == 1 ]]; then
   ok "Set user.name '$toml_name' and user.email '$toml_email' from dotfiles.toml"
   if [[ -n "$toml_signingkey" ]]; then
     if gpg --list-secret-keys "$toml_signingkey" &> /dev/null; then
-      git config --global user.signingkey "$toml_signingkey"
-      git config --global commit.gpgsign true
-      git config --global tag.gpgSign true
+      gc user.signingkey "$toml_signingkey"
+      gc commit.gpgsign true
+      gc tag.gpgSign true
       ok "Enabled GPG signing with key $toml_signingkey"
     else
       warn "No local secret key for signingkey '$toml_signingkey' — signing left disabled"
@@ -103,14 +108,14 @@ if [[ "$NON_INTERACTIVE" == 1 ]]; then
 fi
 
 # ── 1. User Name ──────────────────────────────────────────────
-current_name=$(git config --global user.name || echo "$toml_name")
+current_name=$(git config user.name || echo "$toml_name")
 prompt "Enter Git user.name [${current_name}]:"
 read -r new_name
 if [[ -n "$new_name" ]]; then
-  git config --global user.name "$new_name"
+  gc user.name "$new_name"
   ok "Set user.name to '$new_name'"
 elif [[ -n "$current_name" ]]; then
-  git config --global user.name "$current_name"
+  gc user.name "$current_name"
   ok "Set user.name to '$current_name'"
 else
   warn "user.name is required!"
@@ -118,14 +123,14 @@ else
 fi
 
 # ── 2. User Email ─────────────────────────────────────────────
-current_email=$(git config --global user.email || echo "$toml_email")
+current_email=$(git config user.email || echo "$toml_email")
 prompt "Enter Git user.email [${current_email}]:"
 read -r new_email
 if [[ -n "$new_email" ]]; then
-  git config --global user.email "$new_email"
+  gc user.email "$new_email"
   ok "Set user.email to '$new_email'"
 elif [[ -n "$current_email" ]]; then
-  git config --global user.email "$current_email"
+  gc user.email "$current_email"
   ok "Set user.email to '$current_email'"
 else
   warn "user.email is required!"
@@ -145,19 +150,19 @@ if [[ "${setup_gpg,,}" =~ ^(y|yes)$ ]]; then
     gpg --list-secret-keys --keyid-format=long | grep -E '(sec|uid)' || echo "No secret keys found."
 
     echo ""
-    current_signingkey=$(git config --global user.signingkey || echo "$toml_signingkey")
+    current_signingkey=$(git config user.signingkey || echo "$toml_signingkey")
     prompt "Enter the GPG Key ID to use (the part after rsa4096/ or ed25519/) [${current_signingkey}]:"
     read -r new_keyid
 
     if [[ -n "$new_keyid" ]]; then
-      git config --global user.signingkey "$new_keyid"
-      git config --global commit.gpgsign true
-      git config --global tag.gpgSign true
+      gc user.signingkey "$new_keyid"
+      gc commit.gpgsign true
+      gc tag.gpgSign true
       ok "Set user.signingkey to '$new_keyid' and enabled signing."
     elif [[ -n "$current_signingkey" ]]; then
-      git config --global user.signingkey "$current_signingkey"
-      git config --global commit.gpgsign true
-      git config --global tag.gpgSign true
+      gc user.signingkey "$current_signingkey"
+      gc commit.gpgsign true
+      gc tag.gpgSign true
       ok "Set user.signingkey to '$current_signingkey' and enabled signing."
     else
       warn "No key selected, GPG setup skipped."
@@ -168,4 +173,4 @@ else
 fi
 
 echo -e "\n${GREEN}Git setup complete!${NC}\n"
-git config --global -l | grep -E '^user\.|^commit\.gpgsign|^tag\.gpgsign'
+git config -l | grep -E '^user\.|^commit\.gpgsign|^tag\.gpgsign'

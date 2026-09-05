@@ -25,7 +25,7 @@ username   = "your_github_handle"   # used by scripts that call the GitHub API
 [git]
 name       = "Your Name"
 email      = "you@example.com"
-signingkey = ""                      # GPG key fingerprint; leave blank to disable commit signing
+signingkey = ""                      # Optional pin. Blank = auto-detect newest GPG secret key for this email.
 # editor   = "nvim"                  # overrides $GIT_EDITOR / $EDITOR
 # defaultbranch = "main"
 
