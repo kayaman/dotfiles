@@ -25,9 +25,11 @@ if [[ ! -f "$DOTFILTER" ]]; then
   exit 1
 fi
 
-hooks_dir="$(git -C "$DOTFILES" rev-parse --path-format=absolute --git-path hooks)"
-mkdir -p "$hooks_dir"
-filter_script="$hooks_dir/dot-clean-filter"
+# The filter script is not a hook, so it lives in the git dir itself rather
+# than the hooks dir — core.hooksPath overrides (lefthook writes an absolute
+# one) would otherwise send it to a path that may not even exist on this
+# machine when a repo copy is restored elsewhere.
+filter_script="$(git -C "$DOTFILES" rev-parse --absolute-git-dir)/dot-clean-filter"
 # The sed delimiter is / (with literal slashes in patterns escaped), so the
 # full ERE syntax .dotfilter advertises — alternation included — works.
 printf "%s\n" \
