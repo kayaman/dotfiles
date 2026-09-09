@@ -42,7 +42,7 @@ LEFTHOOK_VERSION="v2.1.12"
 # renovate: datasource=github-releases depName=cli/cli
 GH_VERSION="v2.100.0"
 # renovate: datasource=github-releases depName=hashicorp/terraform
-TERRAFORM_VERSION="v1.16.1"
+TERRAFORM_VERSION="v1.16.2"
 # renovate: datasource=github-releases depName=nvm-sh/nvm
 NVM_VERSION="v0.40.7"
 # renovate: datasource=github-releases depName=ryanoasis/nerd-fonts
