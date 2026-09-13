@@ -1,5 +1,9 @@
 # dotfiles
 
+```sh
+bash <(curl -fsSL https://dot.ai-assisted.dev)
+```
+
 A clean, modern **Zsh** setup with **Oh My Zsh** and a custom two-line prompt, tailored for developers.
 
 Supports **Linux (openSUSE Tumbleweed / Ubuntu / Fedora / Raspberry Pi OS)**.
