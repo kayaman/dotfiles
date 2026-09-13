@@ -22,6 +22,7 @@ trap 'err "Failed at line $LINENO: $BASH_COMMAND"' ERR
 DRY_RUN=0
 VERBOSE=0
 UNINSTALL=0
+SHELL_JUST_CHANGED=0
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${XDG_CONFIG_HOME:="$HOME/.config"}"
@@ -62,7 +63,7 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 declare -A COMPONENT_DEFAULT=(
   [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
   [claude]=off [codex]=off [copilot]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
-  [vscode]=on [podman]=on [alacritty]=on [chrome]=on [cedilla]=on [shell]=on
+  [vscode]=on [podman]=on [alacritty]=on [ghostty]=on [chrome]=on [cedilla]=on [shell]=on
   [fonts]=on ["git-config"]=on ["dot-filter"]=on
 )
 declare -A COMPONENT_STATE
@@ -92,6 +93,7 @@ component_present() {
     vscode) command -v code &> /dev/null || [[ -x /usr/local/bin/code ]] ;;
     podman) command -v podman &> /dev/null ;;
     alacritty) command -v alacritty &> /dev/null ;;
+    ghostty) command -v ghostty &> /dev/null ;;
     chrome) command -v google-chrome-stable &> /dev/null ;;
     cedilla) grep -qF ccedilla "$HOME/.XCompose" 2> /dev/null ;;
     shell) [[ "$(basename "$(getent passwd "$USER" 2> /dev/null | cut -d: -f7)")" == "zsh" ]] ;;
@@ -714,6 +716,41 @@ install_alacritty() {
   ok "alacritty built from source and installed to ~/.local"
 }
 
+# ── 3b2. Ghostty ──────────────────────────────────────────────
+install_ghostty() {
+  section "Ghostty"
+
+  if command -v ghostty &> /dev/null; then
+    ok "ghostty already installed ($(ghostty --version 2>&1 | head -1))"
+    return
+  fi
+
+  case "$DISTRO" in
+    opensuse)
+      sudo zypper install -y --no-recommends ghostty || {
+        err "Could not install ghostty"
+        return 1
+      }
+      ;;
+    ubuntu | raspberry)
+      warn "ghostty is not packaged for apt — install manually: https://ghostty.org/download"
+      return 1
+      ;;
+    fedora)
+      sudo dnf copr enable -y scottames/ghostty || {
+        err "Could not enable copr scottames/ghostty"
+        return 1
+      }
+      sudo dnf install -y ghostty || {
+        err "Could not install ghostty"
+        return 1
+      }
+      ;;
+  esac
+
+  ok "ghostty installed"
+}
+
 # ── 3c. Google Chrome ────────────────────────────────────────
 install_chrome() {
   section "Google Chrome"
@@ -955,6 +992,7 @@ set_default_shell() {
     warn "chsh failed — run manually: chsh -s $zsh_path"
     return 1
   }
+  SHELL_JUST_CHANGED=1
   ok "Default shell set to zsh"
 }
 
@@ -1167,6 +1205,7 @@ main() {
   run_component omz install_oh_my_zsh
   install_dev_tools
   run_component alacritty install_alacritty
+  run_component ghostty install_ghostty
   run_component chrome install_chrome
   run_component fonts install_nerd_font
   run_component git-config setup_git_identity
@@ -1176,7 +1215,18 @@ main() {
   run_component shell set_default_shell
 
   echo ""
-  ok "Installation complete! Restart your terminal or run: exec zsh"
+  ok "Installation complete!"
+  if [[ "$SHELL_JUST_CHANGED" == "1" ]]; then
+    echo ""
+    warn "Your login shell was just changed to zsh, but THIS terminal is still"
+    warn "running its old shell — aliases/functions won't exist here until you:"
+    warn "  1. run 'exec zsh' in every open terminal, OR"
+    warn "  2. close and reopen your terminal app, OR"
+    warn "  3. on some desktops (COSMIC, some GNOME setups), log out and back in"
+    warn "if a brand-new terminal still isn't zsh, that's the one that needs (3)."
+  else
+    ok "Restart your terminal or run: exec zsh"
+  fi
   print_summary
 }
 

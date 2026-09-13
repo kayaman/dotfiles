@@ -74,7 +74,7 @@ bash install.sh --help                     # list all components and their defau
 
 Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.dev) --with claude`. Names may be comma-separated or the flag repeated.
 
-Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
+Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `ghostty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
 
 ### Dry run, health check, uninstall
 
