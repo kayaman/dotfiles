@@ -12,7 +12,8 @@
 #    --uninstall      remove all stow symlinks and print (not execute) the
 #                     package-manager commands to undo each install step
 #    --help           list all components and their default state
-#  Claude (CLI + config) is opt-in; everything else installs by default.
+#  Claude (CLI + config), Codex CLI, and Copilot CLI are opt-in; everything
+#  else installs by default.
 # =============================================================================
 
 set -euo pipefail
@@ -60,7 +61,7 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 # here, then guard its install block with `want <name>`.
 declare -A COMPONENT_DEFAULT=(
   [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
-  [claude]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
+  [claude]=off [codex]=off [copilot]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
   [vscode]=on [podman]=on [alacritty]=on [chrome]=on [cedilla]=on [shell]=on
   [fonts]=on ["git-config"]=on ["dot-filter"]=on
 )
@@ -82,6 +83,8 @@ component_present() {
     sops) command -v sops &> /dev/null ;;
     zed) command -v zed &> /dev/null || [[ -x "$HOME/.local/bin/zed" ]] ;;
     claude) command -v claude &> /dev/null || [[ -x "$HOME/.local/bin/claude" ]] ;;
+    codex) command -v codex &> /dev/null ;;
+    copilot) command -v copilot &> /dev/null ;;
     lefthook) command -v lefthook &> /dev/null || [[ -x "$HOME/.local/bin/lefthook" ]] ;;
     gh) command -v gh &> /dev/null ;;
     terraform) command -v terraform &> /dev/null ;;
@@ -427,6 +430,30 @@ install_claude_code() {
 
 }
 
+# OpenAI Codex CLI — npm package is scoped (@openai/codex); the bare `codex`
+# name on npm is a different, unrelated package, so this must not be simplified.
+install_codex() {
+  if ! command -v codex &> /dev/null; then
+    npm install -g @openai/codex || return 1
+    ok "codex cli installed"
+  else
+    ok "codex cli already installed"
+  fi
+
+}
+
+# GitHub Copilot CLI — standalone `copilot` agent (distinct from the older
+# `gh copilot` gh-extension).
+install_copilot() {
+  if ! command -v copilot &> /dev/null; then
+    npm install -g @github/copilot || return 1
+    ok "copilot cli installed"
+  else
+    ok "copilot cli already installed"
+  fi
+
+}
+
 # lefthook — pre-commit runner; not in distro repos
 install_lefthook() {
   if ! command -v lefthook &> /dev/null && [ ! -f "$HOME/.local/bin/lefthook" ]; then
@@ -584,6 +611,8 @@ install_dev_tools() {
   run_component sops install_sops
   run_component zed install_zed
   run_component claude install_claude
+  run_component codex install_codex
+  run_component copilot install_copilot
   run_component lefthook install_lefthook
   run_component gh install_gh
   run_component terraform install_terraform
