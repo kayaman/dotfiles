@@ -23,7 +23,7 @@ permissions:
 # GUI apps are pointless headless; chsh needs PAM interaction; podman-in-docker
 # is not worth the trouble. Everything else runs.
 env:
-  SKIP_COMPONENTS: chrome,vscode,alacritty,zed,claude,podman,shell
+  SKIP_COMPONENTS: cursor,android,chrome,vscode,alacritty,zed,claude,podman,shell
 
 jobs:
   install:

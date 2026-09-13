@@ -49,6 +49,8 @@ TERRAFORM_VERSION="v1.16.1"
 NVM_VERSION="v0.40.7"
 # renovate: datasource=github-releases depName=ryanoasis/nerd-fonts
 NERDFONT_VERSION="v3.5.1"
+# Cursor AppImage release series from https://cursor.com/download
+CURSOR_VERSION="3.20"
 
 info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 ok() { echo -e "${GREEN}[OK]${NC}    $*"; }
@@ -63,8 +65,8 @@ section() { echo -e "\n${BOLD}${CYAN}━━━  $*  ━━━${NC}"; }
 declare -A COMPONENT_DEFAULT=(
   [omz]=on [nvm]=on [uv]=on [rust]=on [sops]=on [zed]=on
   [claude]=off [codex]=off [copilot]=off [lefthook]=on [gh]=on [terraform]=on ["aws-cli"]=on
-  [vscode]=on [podman]=on [alacritty]=on [ghostty]=on [chrome]=on [cedilla]=on [shell]=on
-  [fonts]=on ["git-config"]=on ["dot-filter"]=on
+  [cursor]=on [vscode]=on [podman]=on [alacritty]=on [ghostty]=on [chrome]=on [cedilla]=on [shell]=on
+  [android]=on [fonts]=on ["git-config"]=on ["dot-filter"]=on
 )
 declare -A COMPONENT_STATE
 # Filled by run_component: ok | failed | skipped | unsupported
@@ -77,8 +79,9 @@ want() { [[ "${COMPONENT_STATE[$1]:-off}" == "on" ]]; }
 # guards inside each installer — used by doctor and --dry-run.
 component_present() {
   case "$1" in
+    android) android_present ;;
     omz) [[ -d "$HOME/.oh-my-zsh" ]] ;;
-    nvm) [[ -d "${NVM_DIR:-$HOME/.nvm}" || -d "${XDG_CONFIG_HOME:-$HOME/.config}/nvm" ]] ;;
+    nvm) [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" || -s "$HOME/.nvm/nvm.sh" || -s "${XDG_CONFIG_HOME:-$HOME/.config}/nvm/nvm.sh" ]] ;;
     uv) command -v uv &> /dev/null || [[ -x "$HOME/.local/bin/uv" ]] || [[ -x "$HOME/.cargo/bin/uv" ]] ;;
     rust) command -v rustup &> /dev/null || command -v cargo &> /dev/null || [[ -x "$HOME/.cargo/bin/cargo" ]] ;;
     sops) command -v sops &> /dev/null ;;
@@ -90,6 +93,7 @@ component_present() {
     gh) command -v gh &> /dev/null ;;
     terraform) command -v terraform &> /dev/null ;;
     aws-cli) command -v aws &> /dev/null ;;
+    cursor) [[ -x "$HOME/.local/share/cursor/Cursor.AppImage" && -x "$HOME/.local/bin/cursor" ]] ;;
     vscode) command -v code &> /dev/null || [[ -x /usr/local/bin/code ]] ;;
     podman) command -v podman &> /dev/null ;;
     alacritty) command -v alacritty &> /dev/null ;;
@@ -108,8 +112,8 @@ component_present() {
 # report them as skipped instead of missing. Requires ARCH/DISTRO to be set.
 component_supported() {
   case "$1" in
-    zed | chrome) [[ "$ARCH" == "amd64" ]] ;;
-    aws-cli) [[ "$ARCH" == "amd64" || "$ARCH" == "arm64" ]] ;;
+    android | zed | chrome) [[ "$ARCH" == "amd64" ]] ;;
+    cursor | aws-cli) [[ "$ARCH" == "amd64" || "$ARCH" == "arm64" ]] ;;
     vscode) [[ "$ARCH" != "armhf" ]] ;;
     cedilla) [[ "$DISTRO" == "opensuse" || "$DISTRO" == "fedora" ]] ;;
     *) return 0 ;;
@@ -365,7 +369,10 @@ install_oh_my_zsh() {
 install_nvm() {
   # nvm's installer honors XDG — an existing install may live in ~/.config/nvm
   if ! component_present nvm; then
-    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash || return 1
+    local nvm_dir="${NVM_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nvm}"
+    mkdir -p "$nvm_dir" || return 1
+    curl -fsSL --retry 3 "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | NVM_DIR="$nvm_dir" PROFILE=/dev/null bash || return 1
+    component_present nvm || return 1
     ok "nvm installed"
   else
     ok "nvm already installed"
@@ -561,6 +568,53 @@ install_awscli() {
 
 }
 
+install_cursor() (
+  local cursor_arch fuse_package tmp
+  case "$ARCH" in
+    amd64) cursor_arch=x64 ;;
+    arm64) cursor_arch=arm64 ;;
+    *) return 1 ;;
+  esac
+  case "$DISTRO" in
+    ubuntu | raspberry)
+      fuse_package=libfuse2
+      if apt-cache show libfuse2t64 > /dev/null 2>&1; then
+        fuse_package=libfuse2t64
+      fi
+      sudo apt-get install -y "$fuse_package" || return 1
+      ;;
+    fedora) sudo dnf install -y fuse-libs || return 1 ;;
+    opensuse) sudo zypper install -y libfuse2 || return 1 ;;
+  esac
+  local dest="$HOME/.local/share/cursor"
+  mkdir -p "$dest" "$HOME/.local/bin" "$HOME/.local/share/applications" || return 1
+  if [[ ! -x "$dest/Cursor.AppImage" ]]; then
+    tmp="$(mktemp "$dest/.download.XXXXXX")" || return 1
+    trap 'rm -f "$tmp"' EXIT
+    curl -fL --retry 3 "https://api2.cursor.sh/updates/download/golden/linux-$cursor_arch/cursor/$CURSOR_VERSION" -o "$tmp" || return 1
+    # Reject HTML/error responses before publishing the executable.
+    [[ "$(od -An -tx1 -N4 "$tmp" | tr -d ' \n')" == 7f454c46 ]] || {
+      err "Cursor download is not an ELF AppImage"
+      return 1
+    }
+    chmod +x "$tmp" || return 1
+    mv -f "$tmp" "$dest/Cursor.AppImage" || return 1
+  fi
+  ln -sfn "$dest/Cursor.AppImage" "$HOME/.local/bin/cursor" || return 1
+  cat > "$HOME/.local/share/applications/cursor.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=Cursor
+Comment=AI code editor
+Exec="$dest/Cursor.AppImage" %F
+Icon=applications-development
+Terminal=false
+Categories=Development;IDE;
+StartupWMClass=Cursor
+EOF
+  ok "Cursor AppImage installed"
+)
+
 install_vscode() {
   if ! command -v code &> /dev/null && [ ! -f "/usr/local/bin/code" ]; then
     case "$DISTRO" in
@@ -619,7 +673,9 @@ install_dev_tools() {
   run_component gh install_gh
   run_component terraform install_terraform
   run_component aws-cli install_awscli
+  run_component cursor install_cursor
   run_component vscode install_vscode
+  run_component android install_android
   return 0
 }
 
@@ -1159,6 +1215,11 @@ uninstall_dotfiles() {
   echo "  rm -rf ~/.oh-my-zsh ~/.nvm ~/.config/nvm ~/.cargo ~/.rustup"
   echo "  rm -f /usr/local/bin/{sops,gh,terraform} ~/.local/bin/lefthook"
   echo "  rm -rf ~/.bun"
+  echo "  rm -rf ~/.local/share/cursor"
+  echo "  rm -f ~/.local/bin/cursor ~/.local/share/applications/cursor.desktop"
+  echo "  rm -rf ~/.local/share/android-studio  # Android Studio + bundled JDK"
+  echo "  rm -f ~/.local/bin/android-studio ~/.local/share/applications/android-studio.desktop"
+  echo "  # Remove your Android SDK separately if no projects need it (default: ~/Android/Sdk)."
   echo ""
   ok "Uninstall complete."
 }
@@ -1229,5 +1290,8 @@ main() {
   fi
   print_summary
 }
+
+# shellcheck source=scripts/android.sh
+source "$DOTFILES/scripts/android.sh"
 
 main "$@"

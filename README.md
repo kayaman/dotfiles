@@ -74,7 +74,7 @@ bash install.sh --help                     # list all components and their defau
 
 Flags work with the one-liner too: `bash <(curl -fsSL https://dot.ai-assisted.dev) --with claude`. Names may be comma-separated or the flag repeated.
 
-Toggleable components: `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `codex` (opt-in), `copilot` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `ghostty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
+Toggleable components: `cursor`, `android`, `omz`, `nvm`, `uv`, `rust`, `sops`, `zed`, `claude` (opt-in), `codex` (opt-in), `copilot` (opt-in), `lefthook`, `gh`, `terraform`, `aws-cli`, `vscode`, `podman`, `alacritty`, `ghostty`, `chrome`, `cedilla`, `shell`, `fonts` (JetBrainsMono Nerd Font), `git-config` (git identity from `dotfiles.toml`), `dot-filter` (secret-redaction git filter). To add a new one, register it in `COMPONENT_DEFAULT` in `install.sh`, guard its install step with `run_component <name> <fn>`, and add a presence probe to `component_present`.
 
 ### Dry run, health check, uninstall
 
@@ -86,6 +86,38 @@ bash install.sh --uninstall   # remove all stow symlinks; print (don't run) tool
 ```
 
 `doctor` exits non-zero if any enabled component is missing or any stow-managed file doesn't resolve into the repo — CI runs it after every install test. `--uninstall --dry-run` composes: preview removal without touching disk.
+
+### Cursor AppImage
+
+The default `cursor` component installs the official Linux AppImage for x86_64 or
+ARM64, the FUSE 2 runtime, a `cursor` command, and a desktop menu entry. ARM32 is
+skipped. The AppImage lives in `~/.local/share/cursor/Cursor.AppImage`; re-running
+the installer preserves an existing executable. The download release series is
+set by `CURSOR_VERSION` in `install.sh` using [Cursor's official downloads](https://cursor.com/download).
+Skip with `bash install.sh --without cursor`. Launch with `cursor .` or the app menu.
+
+### Android development
+
+The default `android` component installs Android Studio and its bundled JDK, SDK command-line tools,
+ADB/Fastboot, Android API 36 and build tools, emulator with a Google APIs x86_64 image,
+NDK and CMake. Official Studio and command-line archives are checksum-verified.
+Linux x86_64 is supported; ARM hosts skip this component. Skip with `--without android`.
+
+Studio lives in `~/.local/share/android-studio`; the SDK defaults to `~/Android/Sdk`
+(or `ANDROID_HOME` / `ANDROID_SDK_ROOT`). Restart Zsh to load the SDK paths and bundled
+`JAVA_HOME` unless you already set one. Launch `android-studio` or use the desktop menu.
+The installer prompts for SDK licenses. Downloads require several GB of disk space.
+
+Create an AVD in Studio's Device Manager. For acceleration, enable CPU virtualization
+and ensure your user can access `/dev/kvm` (usually join the `kvm` group, then log out
+and back in). For a physical device, enable USB debugging and approve the computer
+on the device; check with `adb devices`. Distribution packages supply USB rules.
+Use each project's `./gradlew` for Gradle and Kotlin versions.
+
+Override SDK package versions with `ANDROID_API`, `ANDROID_BUILD_TOOLS`, `ANDROID_NDK`,
+and `ANDROID_CMAKE` when running the installer or doctor. Install extra platforms via
+`sdkmanager` or Studio's SDK Manager. See the [official SDK manager documentation](https://developer.android.com/tools/sdkmanager).
+The headless container install matrix skips this large GUI component.
 
 ### Versions
 

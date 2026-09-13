@@ -133,7 +133,17 @@ RPROMPT='%F{8}%*%f'
 
 # ── NVM (Lazy Load Optimization) ──────────────────────────────
 log_step "NVM setup (lazy)"
-export NVM_DIR="$HOME/.config/nvm"
+# Prefer an existing installation if an inherited path is stale.
+if [[ ! -s "${NVM_DIR:-}/nvm.sh" ]]; then
+    if [[ -s "${XDG_CONFIG_HOME:-$HOME/.config}/nvm/nvm.sh" ]]; then
+        NVM_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/nvm"
+    elif [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+        NVM_DIR="$HOME/.nvm"
+    else
+        NVM_DIR="${NVM_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nvm}"
+    fi
+fi
+export NVM_DIR
 load_nvm() {
     log_step "Loading NVM (first use)"
     unset -f nvm node npm npx

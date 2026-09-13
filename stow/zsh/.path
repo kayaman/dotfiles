@@ -9,3 +9,15 @@ _add_to_path() {
 _add_to_path "$HOME/.local/bin"
 _add_to_path "$HOME/.cargo/bin"
 _add_to_path "$HOME/.bun/bin"
+
+# Android SDK and Studio's bundled JDK (preserve an explicit Java selection).
+if [[ -d "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}" ]]; then
+    export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+    _add_to_path "$ANDROID_HOME/platform-tools"
+    _add_to_path "$ANDROID_HOME/emulator"
+    _add_to_path "$ANDROID_HOME/cmdline-tools/latest/bin"
+    if [[ -z "$JAVA_HOME" && -x "$HOME/.local/share/android-studio/jbr/bin/java" ]]; then
+        export JAVA_HOME="$HOME/.local/share/android-studio/jbr"
+        _add_to_path "$JAVA_HOME/bin"
+    fi
+fi
