@@ -40,7 +40,7 @@ NC='\033[0m'
 # renovate: datasource=github-releases depName=getsops/sops
 SOPS_VERSION="v3.13.3"
 # renovate: datasource=github-releases depName=evilmartians/lefthook
-LEFTHOOK_VERSION="v2.1.12"
+LEFTHOOK_VERSION="v2.1.14"
 # renovate: datasource=github-releases depName=cli/cli
 GH_VERSION="v2.100.0"
 # renovate: datasource=github-releases depName=hashicorp/terraform
