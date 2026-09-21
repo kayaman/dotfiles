@@ -46,7 +46,7 @@ GH_VERSION="v2.100.0"
 # renovate: datasource=github-releases depName=hashicorp/terraform
 TERRAFORM_VERSION="v1.16.1"
 # renovate: datasource=github-releases depName=nvm-sh/nvm
-NVM_VERSION="v0.40.7"
+NVM_VERSION="v0.40.8"
 # renovate: datasource=github-releases depName=ryanoasis/nerd-fonts
 NERDFONT_VERSION="v3.5.1"
 # Cursor AppImage release series from https://cursor.com/download
